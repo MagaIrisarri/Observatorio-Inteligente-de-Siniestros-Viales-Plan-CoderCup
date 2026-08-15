@@ -1,12 +1,14 @@
+import csv
 import json
+import os
 import pandas as pd
 from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
-import os
 from dotenv import load_dotenv
 
-MODEL_NAME = "gemini-flash-latest"
+MODEL_NAME = "gemini-3.1-flash-lite"
+ARCHIVO_SINIESTROS = "siniestros_rosario.csv"
 
 
 # lee el .env y carga las variables en os.environ
@@ -30,10 +32,21 @@ class SiniestroVialSchema(BaseModel):
     resumen_breve: str = Field(description="Resumen del hecho en máximo 20 palabras")
 
 
-def estructurar_noticia_con_ia(titulo, texto, url):
+def estructurar_noticia_con_ia(titulo, texto, url, fecha_publicacion=None):
+    contexto_fecha = (
+        f"Esta noticia fue publicada el {fecha_publicacion}. Usá esa fecha como referencia "
+        f"para resolver expresiones relativas ('hoy', 'ayer', 'este viernes', etc.). Si el "
+        f"texto no menciona explícitamente una fecha distinta para el siniestro, asumí que "
+        f"ocurrió el mismo día de publicación."
+        if fecha_publicacion else
+        "No se pudo determinar la fecha de publicación de esta noticia."
+    )
+
     prompt = f"""
     Analiza la siguiente noticia de un siniestro vial y extrae la información requerida:
-    
+
+    {contexto_fecha}
+
     Título: {titulo}
     Texto: {texto}
     """
@@ -48,6 +61,59 @@ def estructurar_noticia_con_ia(titulo, texto, url):
     )
 
     return json.loads(response.text)
+
+
+def _normalizar_calle(calle):
+    return (calle or "").strip().lower()
+
+
+def es_duplicado(datos_json, path=ARCHIVO_SINIESTROS):
+    """
+    Compara un siniestro recién clasificado contra los ya guardados, para
+    detectar el mismo hecho contado por otra fuente (Rosario3 vs Cadena3,
+    URLs distintas). Se considera duplicado si comparten las mismas dos
+    calles (sin importar el orden) y una fecha compatible.
+    """
+    if not os.path.exists(path):
+        return False
+
+    calles_nuevas = frozenset([
+        _normalizar_calle(datos_json.get("ubicacion_calle1")),
+        _normalizar_calle(datos_json.get("ubicacion_calle2")),
+    ])
+    if calles_nuevas == frozenset({""}):
+        return False  # sin calles no hay con qué comparar, dejamos pasar
+
+    fecha_nueva = datos_json.get("fecha_siniestro")
+
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        for fila in csv.DictReader(f):
+            calles_existentes = frozenset([
+                _normalizar_calle(fila.get("ubicacion_calle1")),
+                _normalizar_calle(fila.get("ubicacion_calle2")),
+            ])
+            if calles_existentes != calles_nuevas:
+                continue
+
+            fecha_existente = fila.get("fecha_siniestro")
+            if fecha_nueva == fecha_existente or "Desconocido" in (fecha_nueva, fecha_existente):
+                return True
+
+    return False
+
+
+def guardar_resultado(datos_json, url, path=ARCHIVO_SINIESTROS):
+    """
+    Agrega una noticia estructurada al CSV de siniestros (modo append, nunca pisa).
+    Escribe el header solo si el archivo todavía no existe.
+    """
+    datos_para_tabla = datos_json.copy()
+    datos_para_tabla["vehiculos_involucrados"] = ", ".join(datos_para_tabla["vehiculos_involucrados"])
+    datos_para_tabla["url"] = url
+
+    df = pd.DataFrame([datos_para_tabla])
+    existe = os.path.exists(path)
+    df.to_csv(path, mode="a", header=not existe, index=False, encoding="utf-8-sig")
 
 
 if __name__ == "__main__":
@@ -65,17 +131,8 @@ if __name__ == "__main__":
         print("\n✅ RESPUESTA ESTRUCTURADA DE LA IA:")
         print(json.dumps(datos_json, indent=4, ensure_ascii=False))
 
-        datos_para_tabla = datos_json.copy()
-        datos_para_tabla["vehiculos_involucrados"] = ", ".join(datos_para_tabla["vehiculos_involucrados"])
-        datos_para_tabla["url"] = url_prueba
-
-        df = pd.DataFrame([datos_para_tabla])
-
-        print("\n📊 TABLA RESULTANTE (Pandas DataFrame):")
-        print(df.to_string())
-
-        df.to_csv("siniestros_rosario.csv", index=False, encoding="utf-8-sig")
-        print("\n💾 ¡Tabla guardada con éxito en 'siniestros_rosario.csv'!")
+        guardar_resultado(datos_json, url_prueba)
+        print("\n💾 ¡Fila agregada con éxito a 'siniestros_rosario.csv'!")
 
     except Exception as e:
         print(f"\n❌ Ocurrió un error: {e}")
