@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from scraper import (
     cargar_urls_procesadas,
     listar_noticias_nuevas,
@@ -8,8 +10,14 @@ from scraper import (
 )
 from procesador import estructurar_noticia_con_ia, guardar_resultado, es_duplicado
 
-URLS_SECCION = ("https://www.rosario3.com/", "https://www.cadena3.com/rosario")
-
+URLS_SECCION = (
+    "https://www.rosario3.com/seccion/policiales/",
+    "https://www.rosario3.com/seccion/informacion-general/",
+    "https://www.rosario3.com/seccion/ultimas-noticias/",
+    "https://www.rosario3.com/seccion/ciudad/",
+    "https://www.rosario3.com/seccion/region/",
+    "https://www.cadena3.com/rosario",
+)
 
 def main():
     print("Cargando URLs ya procesadas...")
@@ -32,6 +40,7 @@ def main():
         # para no volver a evaluarlas en la próxima corrida.
         for url in set(urls_nuevas) - set(urls_candidatas):
             guardar_url_procesada(url)
+            urls_procesadas.add(url)
 
         if not urls_candidatas:
             print("Ninguna URL nueva pasó el filtro. Fin.")
@@ -53,18 +62,30 @@ def main():
             if anio is None or anio < ANIO_MINIMO:
                 print(f"Año no válido ({anio}), se omite: {url}")
                 guardar_url_procesada(url)
+                urls_procesadas.add(url)
                 continue
 
             if not texto:
                 print(f"Sin texto, se omite: {url}")
                 guardar_url_procesada(url)
+                urls_procesadas.add(url)
                 continue
 
             try:
                 print(f"Clasificando con IA: {titulo[:60]}...")
                 datos = estructurar_noticia_con_ia(titulo, texto, url, fecha_publicacion)
 
-                es_de_rosario = "rosario" in datos.get("ciudad", "").lower()
+                ciudad = datos.get("ciudad", "").strip().lower()
+                dominio = urlparse(url).netloc
+
+                # Rosario3 es un diario pura y exclusivamente local: si no aclaró
+                # ciudad (Gemini devolvió "Desconocida" o vacío), asumimos Rosario
+                # en vez de descartar la noticia. En Cadena3 no vale ese supuesto,
+                # porque cubre muchas ciudades distintas.
+                if dominio == "www.rosario3.com":
+                    es_de_rosario = ciudad in ("", "desconocida") or "rosario" in ciudad
+                else:
+                    es_de_rosario = "rosario" in ciudad
 
                 if datos.get("es_siniestro_vial") and es_de_rosario and es_duplicado(datos):
                     print("  -> Mismo siniestro ya registrado desde otra fuente, descartado")
@@ -77,12 +98,15 @@ def main():
                 else:
                     print("  -> No es siniestro vial, descartado")
 
+
+
             except Exception as e:
                 print(f"Error al procesar {url}: {e}")
                 continue
             finally:
                 # Se marca como procesada aunque no sea siniestro, para no reintentarla en la próxima corrida.
                 guardar_url_procesada(url)
+                urls_procesadas.add(url)
 
         print(f"\nListo con {url_seccion}: {siniestros_guardados} siniestros nuevos guardados.")
 

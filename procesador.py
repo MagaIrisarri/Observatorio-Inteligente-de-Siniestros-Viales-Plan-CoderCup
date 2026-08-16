@@ -10,6 +10,8 @@ from dotenv import load_dotenv
 MODEL_NAME = "gemini-3.1-flash-lite"
 ARCHIVO_SINIESTROS = "siniestros_rosario.csv"
 
+from dotenv import load_dotenv
+load_dotenv()  # Carga las variables del archivo .env a os.environ
 
 # lee el .env y carga las variables en os.environ
 load_dotenv()  
@@ -41,12 +43,25 @@ def estructurar_noticia_con_ia(titulo, texto, url, fecha_publicacion=None):
         if fecha_publicacion else
         "No se pudo determinar la fecha de publicación de esta noticia."
     )
+    # Rosario3 es un diario exclusivamente local de Rosario: cuando una nota de
+    # ese sitio no aclara la ciudad, es porque da por sentado que es Rosario
+    # (no hace falta aclararlo si es obvio para su lector local). Cadena3, en
+    # cambio, cubre muchas ciudades del país, así que ahí no vale ese supuesto.
+    contexto_ciudad = (
+        "Esta noticia proviene de Rosario3, un diario pura y exclusivamente local de "
+        "la ciudad de Rosario, Santa Fe. Si el texto no menciona explícitamente que el "
+        "hecho ocurrió en otra ciudad o localidad, asumí que ocurrió en Rosario."
+        if "rosario3.com" in url else
+        "Esta noticia proviene de Cadena3, un medio con cobertura en varias ciudades "
+        "de Argentina. Indicá la ciudad solo si el texto la menciona explícitamente; "
+        "si no la menciona, dejá 'Desconocida'."
+    )
 
     prompt = f"""
     Analiza la siguiente noticia de un siniestro vial y extrae la información requerida:
 
     {contexto_fecha}
-
+    {contexto_ciudad}
     Título: {titulo}
     Texto: {texto}
     """
