@@ -5,19 +5,28 @@ from scraper import (
     listar_noticias_nuevas,
     extraer_noticias,
     guardar_url_procesada,
-    filtrar_urls_por_palabra_clave,
     ANIO_MINIMO,
 )
 from procesador import estructurar_noticia_con_ia, guardar_resultado, es_duplicado
 
+# Antes solo mirábamos la portada de cada sitio, que apenas muestra un puñado
+# de noticias "destacadas" de cualquier tema, no un listado completo. Las
+# secciones internas de Rosario3 (Policiales, Últimas noticias, Ciudad,
+# Región) traen muchísimas más noticias por corrida. Pero lo mejor de todo es
+# /tags/Siniestro-vial: es un filtro temático real del propio sitio (no un
+# buscador roto) que trae casi exclusivamente noticias de siniestros viales,
+# cubriendo semanas hacia atrás en una sola visita. Va primero en la lista
+# porque es, por lejos, la fuente con mejor precisión.
 URLS_SECCION = (
-    "https://www.rosario3.com/seccion/policiales/",
-    "https://www.rosario3.com/seccion/informacion-general/",
-    "https://www.rosario3.com/seccion/ultimas-noticias/",
-    "https://www.rosario3.com/seccion/ciudad/",
-    "https://www.rosario3.com/seccion/region/",
-    "https://www.cadena3.com/rosario",
+    "https://www.rosario3.com/tags/Siniestro-vial",
+    "https://www.lacapital.com.ar/siniestro-vial-a1006964.html",
+    "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/1",
+    "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/2",
+    "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/3",
+    "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/4",
+    "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/5"
 )
+
 
 def main():
     print("Cargando URLs ya procesadas...")
@@ -33,21 +42,8 @@ def main():
             print("No hay noticias nuevas. Fin.")
             continue
 
-        urls_candidatas = filtrar_urls_por_palabra_clave(urls_nuevas)
-        print(f"  {len(urls_candidatas)} candidatas tras el filtro de palabras clave.")
-
-        # Las descartadas por el filtro no se scrapean, pero se marcan como procesadas
-        # para no volver a evaluarlas en la próxima corrida.
-        for url in set(urls_nuevas) - set(urls_candidatas):
-            guardar_url_procesada(url)
-            urls_procesadas.add(url)
-
-        if not urls_candidatas:
-            print("Ninguna URL nueva pasó el filtro. Fin.")
-            continue
-
         print("Extrayendo título y cuerpo de cada noticia candidata...")
-        noticias = extraer_noticias(urls_candidatas)
+        noticias = extraer_noticias(urls_nuevas)
         print(f"  {len(noticias)} noticias extraídas.")
 
         siniestros_guardados = 0
@@ -80,8 +76,8 @@ def main():
 
                 # Rosario3 es un diario pura y exclusivamente local: si no aclaró
                 # ciudad (Gemini devolvió "Desconocida" o vacío), asumimos Rosario
-                # en vez de descartar la noticia. En Cadena3 no vale ese supuesto,
-                # porque cubre muchas ciudades distintas.
+                # en vez de descartar la noticia. En otras fuentes no vale ese
+                # supuesto, porque pueden cubrir más de una ciudad.
                 if dominio == "www.rosario3.com":
                     es_de_rosario = ciudad in ("", "desconocida") or "rosario" in ciudad
                 else:
@@ -98,13 +94,14 @@ def main():
                 else:
                     print("  -> No es siniestro vial, descartado")
 
-
-
             except Exception as e:
                 print(f"Error al procesar {url}: {e}")
                 continue
             finally:
                 # Se marca como procesada aunque no sea siniestro, para no reintentarla en la próxima corrida.
+                # También se actualiza el set en memoria: si esta misma noticia aparece
+                # en otra sección más adelante en esta misma corrida (es común entre
+                # "Policiales" y "Últimas noticias"), no la volvemos a mandar a la IA.
                 guardar_url_procesada(url)
                 urls_procesadas.add(url)
 

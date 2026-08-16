@@ -1,6 +1,9 @@
 import csv
+import io
 import json
 import os
+import re
+import time
 import pandas as pd
 from pydantic import BaseModel, Field
 from google import genai
@@ -9,6 +12,8 @@ from dotenv import load_dotenv
 
 MODEL_NAME = "gemini-3.1-flash-lite"
 ARCHIVO_SINIESTROS = "siniestros_rosario.csv"
+MAX_REINTENTOS_IA = 3
+ESPERA_BASE_SEGUNDOS = 5
 
 from dotenv import load_dotenv
 load_dotenv()  # Carga las variables del archivo .env a os.environ
@@ -34,6 +39,21 @@ class SiniestroVialSchema(BaseModel):
     resumen_breve: str = Field(description="Resumen del hecho en máximo 20 palabras")
 
 
+def _segundos_de_retry_delay(error):
+    """
+    Si el error trae un RetryInfo de la API (ej. 429 por rate limit), devuelve
+    los segundos que Gemini pidió esperar. Si no, devuelve None.
+    """
+    try:
+        detalles = error.details.get("error", {}).get("details", [])
+        for d in detalles:
+            if str(d.get("@type", "")).endswith("RetryInfo"):
+                return float(d["retryDelay"].rstrip("s"))
+    except (AttributeError, KeyError, ValueError, TypeError):
+        pass
+    return None
+
+
 def estructurar_noticia_con_ia(titulo, texto, url, fecha_publicacion=None):
     contexto_fecha = (
         f"Esta noticia fue publicada el {fecha_publicacion}. Usá esa fecha como referencia "
@@ -45,16 +65,15 @@ def estructurar_noticia_con_ia(titulo, texto, url, fecha_publicacion=None):
     )
     # Rosario3 es un diario exclusivamente local de Rosario: cuando una nota de
     # ese sitio no aclara la ciudad, es porque da por sentado que es Rosario
-    # (no hace falta aclararlo si es obvio para su lector local). Cadena3, en
-    # cambio, cubre muchas ciudades del país, así que ahí no vale ese supuesto.
+    # (no hace falta aclararlo si es obvio para su lector local). Para otras
+    # fuentes no vale ese supuesto, porque pueden cubrir más de una ciudad.
     contexto_ciudad = (
         "Esta noticia proviene de Rosario3, un diario pura y exclusivamente local de "
         "la ciudad de Rosario, Santa Fe. Si el texto no menciona explícitamente que el "
         "hecho ocurrió en otra ciudad o localidad, asumí que ocurrió en Rosario."
         if "rosario3.com" in url else
-        "Esta noticia proviene de Cadena3, un medio con cobertura en varias ciudades "
-        "de Argentina. Indicá la ciudad solo si el texto la menciona explícitamente; "
-        "si no la menciona, dejá 'Desconocida'."
+        "Indicá la ciudad solo si el texto la menciona explícitamente; si no la "
+        "menciona, dejá 'Desconocida'."
     )
 
     prompt = f"""
@@ -66,26 +85,76 @@ def estructurar_noticia_con_ia(titulo, texto, url, fecha_publicacion=None):
     Texto: {texto}
     """
 
-    response = client.models.generate_content(
-        model=MODEL_NAME,
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_schema=SiniestroVialSchema
-        )
-    )
+    ultimo_error = None
+    for intento in range(1, MAX_REINTENTOS_IA + 1):
+        try:
+            response = client.models.generate_content(
+                model=MODEL_NAME,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    response_schema=SiniestroVialSchema
+                )
+            )
+            return json.loads(response.text)
+        except Exception as e:
+            ultimo_error = e
+            if intento == MAX_REINTENTOS_IA:
+                break
+            espera = _segundos_de_retry_delay(e)
+            if espera is None:
+                espera = ESPERA_BASE_SEGUNDOS * intento  # backoff simple si no hay pista de la API
+            print(f"  Error de la IA (intento {intento}/{MAX_REINTENTOS_IA}): {e}. Reintentando en {espera:.0f}s...")
+            time.sleep(espera)
 
-    return json.loads(response.text)
+    raise ultimo_error
+
+
+PREFIJOS_TIPO_VIA = re.compile(
+    r"^\s*(avenida|av\.?|bv\.?|boulevard|blvd\.?|avda\.?|bulevar)\s+",
+    re.IGNORECASE
+)
 
 
 def _normalizar_calle(calle):
-    return (calle or "").strip().lower()
+    """
+    Saca el prefijo de tipo de vía (Avenida, Bv., etc.) antes de comparar:
+    Gemini a veces lo incluye ("Avenida Pellegrini") y a veces no
+    ("Pellegrini") según cómo lo mencione la nota, y sin esto dos fuentes
+    hablando de la misma calle no matcheaban como duplicado.
+    """
+    return PREFIJOS_TIPO_VIA.sub("", (calle or "").strip()).strip().lower()
+
+
+def _leer_filas_robusto(path):
+    """
+    Igual que csv.DictReader, pero repara filas del formato viejo donde
+    una fila quedó colapsada entera en la primera columna (por ejemplo,
+    por un bug ya corregido en una versión anterior de guardar_resultado).
+    Sin esto, es_duplicado no puede comparar contra esas filas porque
+    fila.get("ubicacion_calle1") les da None.
+    """
+    with open(path, encoding="utf-8-sig", newline="") as f:
+        reader = csv.DictReader(f)
+        fieldnames = reader.fieldnames
+        for fila in reader:
+            if fila.get("url"):
+                yield fila
+                continue
+
+            primera_col = fieldnames[0]
+            sub_reader = csv.reader(io.StringIO(fila.get(primera_col) or ""))
+            valores = next(sub_reader, [])
+            if len(valores) == len(fieldnames):
+                yield dict(zip(fieldnames, valores))
+            else:
+                yield fila
 
 
 def es_duplicado(datos_json, path=ARCHIVO_SINIESTROS):
     """
     Compara un siniestro recién clasificado contra los ya guardados, para
-    detectar el mismo hecho contado por otra fuente (Rosario3 vs Cadena3,
+    detectar el mismo hecho contado por otra fuente (Rosario3 vs La Capital,
     URLs distintas). Se considera duplicado si comparten las mismas dos
     calles (sin importar el orden) y una fecha compatible.
     """
@@ -101,18 +170,17 @@ def es_duplicado(datos_json, path=ARCHIVO_SINIESTROS):
 
     fecha_nueva = datos_json.get("fecha_siniestro")
 
-    with open(path, encoding="utf-8-sig", newline="") as f:
-        for fila in csv.DictReader(f):
-            calles_existentes = frozenset([
-                _normalizar_calle(fila.get("ubicacion_calle1")),
-                _normalizar_calle(fila.get("ubicacion_calle2")),
-            ])
-            if calles_existentes != calles_nuevas:
-                continue
+    for fila in _leer_filas_robusto(path):
+        calles_existentes = frozenset([
+            _normalizar_calle(fila.get("ubicacion_calle1")),
+            _normalizar_calle(fila.get("ubicacion_calle2")),
+        ])
+        if calles_existentes != calles_nuevas:
+            continue
 
-            fecha_existente = fila.get("fecha_siniestro")
-            if fecha_nueva == fecha_existente or "Desconocido" in (fecha_nueva, fecha_existente):
-                return True
+        fecha_existente = fila.get("fecha_siniestro")
+        if fecha_nueva == fecha_existente or "Desconocido" in (fecha_nueva, fecha_existente):
+            return True
 
     return False
 

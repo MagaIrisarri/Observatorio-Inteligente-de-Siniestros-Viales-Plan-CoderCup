@@ -14,35 +14,6 @@ HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 }
 
-PALABRAS_CLAVE_TRANSITO = [
-    "choque", "choco", "chocó", "chocaron", "chocar",
-    "colision", "colisión", "colisiono", "colisionó",
-    "accidente", "siniestro", "siniestros",
-    "atropello", "atropelló", "atropellado", "atropellada",
-    "volco", "volcó", "vuelco",
-    "embistio", "embistió", "embestido", "embestida",
-    "arrollo", "arrolló", "arrollado", "arrollada",
-    "auto", "autos", "moto", "motos", "colectivo", "colectivos",
-    "camion", "camión", "camiones", "bicicleta", "ciclista", "peatón",
-    "peatona", "peatones", "peaton", "micro", "automovilista",
-    "vehículo", "vehículos", "motociclista", "motociclistas",
-]
-
-PATRON_PALABRAS_CLAVE = re.compile(
-    r"\b(" + "|".join(PALABRAS_CLAVE_TRANSITO) + r")\b",
-    re.IGNORECASE
-)
-
-def filtrar_urls_por_palabra_clave(urls):
-    """
-    Pre-filtro barato: se queda solo con las URLs cuyo slug menciona
-    algo de tránsito. No reemplaza a es_siniestro_vial (eso lo decide
-    Gemini con el texto completo) — solo evita scrapear y mandar a la
-    IA noticias que obviamente no son de tránsito.
-    """
-    return [u for u in urls if PATRON_PALABRAS_CLAVE.search(u)]
-
-
 # --- Extractores específicos por sitio ---
 # Cada extractor recibe (soup, url) de una noticia ya descargada y devuelve
 # {"titulo", "texto_completo", "anio"}. "anio" puede dar None si no se pudo
@@ -77,37 +48,46 @@ def extraer_noticia_rosario3(soup, url):
     }
 
 
-def extraer_noticia_cadena3(soup, url):
-    titulo_elem = soup.find('h1')
-    titulo = titulo_elem.text.strip() if titulo_elem else "Sin título"
+MESES_ES = {
+    "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
+    "julio": 7, "agosto": 8, "septiembre": 9, "setiembre": 9, "octubre": 10,
+    "noviembre": 11, "diciembre": 12,
+}
 
-    # Cadena3 no pone la fecha en la URL: viene en el JSON-LD de la nota.
+
+def extraer_noticia_lacapital(soup, url):
+    titulo_elem = soup.find('h1', class_='nota-title')
+    titulo = titulo_elem.get_text(strip=True) if titulo_elem else "Sin título"
+
+    # El cuerpo viene partido en varios div.article-body, intercalados con
+    # banners e imágenes -> hay que unir los <p> de todos, no solo del
+    # primero. El bloque de "Noticias relacionadas" también usa esta clase
+    # pero no tiene <p> adentro (usa <h3>), así que no hace falta excluirlo.
+    parrafos = []
+    for bloque in soup.find_all('div', class_='article-body'):
+        for p in bloque.find_all('p'):
+            texto = p.get_text(strip=True)
+            if texto and not texto.startswith(">>"):  # "Leer más" internos
+                parrafos.append(texto)
+    texto_completo = "\n".join(parrafos)
+
+    # A diferencia de Rosario3, acá la fecha real viene directo en el HTML
+    # (span.nota-fecha, ej. "7 de agosto 2026"), no hay que inferirla del texto.
     anio = None
     fecha_publicacion = None
-    ld = soup.find('script', type='application/ld+json')
-    if ld and ld.string:
-        try:
-            data = json.loads(ld.string)
-            fecha = data.get('datePublished', '')
-            if fecha:
-                fecha_publicacion = fecha[:10]
-                anio = int(fecha[:4])
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-    # El cuerpo vive en <article class="separador-chico">, mezclado con
-    # ruido (bajadas de radio, "FOTO:", links a redes). Nos quedamos con
-    # párrafos largos y descartamos el boilerplate conocido.
-    texto_completo = ""
-    articulo = soup.find('article', class_='separador-chico')
-    if articulo:
-        parrafos = []
-        for p in articulo.find_all('p'):
-            texto = p.get_text(strip=True)
-            if len(texto) < 40 or texto.startswith("FOTO:") or "Mirá las notas de Cadena 3" in texto:
-                continue
-            parrafos.append(texto)
-        texto_completo = "\n".join(parrafos)
+    fecha_tag = soup.find('span', class_='nota-fecha')
+    if fecha_tag:
+        match = re.search(
+            r"(\d{1,2})\s+de\s+(\w+)\s+(?:de\s+)?(\d{4})",
+            fecha_tag.get_text(strip=True),
+            re.IGNORECASE,
+        )
+        if match:
+            dia, mes_nombre, anio_str = match.groups()
+            mes = MESES_ES.get(mes_nombre.lower())
+            if mes:
+                anio = int(anio_str)
+                fecha_publicacion = f"{anio_str}-{mes:02d}-{int(dia):02d}"
 
     return {
         "titulo": titulo,
@@ -119,14 +99,16 @@ def extraer_noticia_cadena3(soup, url):
 
 # --- Config por sitio: qué URLs son noticias y cómo extraerlas ---
 
+PATRON_LACAPITAL = re.compile(r"-n\d+\.html$")
+
 SITIOS = {
     "www.rosario3.com": {
         "patron_url": re.compile(r"^/[^/]+/.+-\d{8}-\d{4}\.html$"),
         "extraer": extraer_noticia_rosario3,
     },
-    "www.cadena3.com": {
-        "patron_url": re.compile(r"^/noticia/[^/]+/[^/]+_\d+$"),
-        "extraer": extraer_noticia_cadena3,
+    "www.lacapital.com.ar": {
+        "patron_url": PATRON_LACAPITAL,
+        "extraer": extraer_noticia_lacapital,
     },
 }
 

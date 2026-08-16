@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observatorio Inteligente de Siniestros Viales — Rosario</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --asphalt:#12141a;
+    --asphalt-2:#1b1e26;
+    --asphalt-3:#242833;
+    --line:#e7e4db;
+    --line-dim:#9a9da6;
+    --caution:#f2a93b;
+    --caution-dim:#c9872a;
+    --danger:#e0555f;
+    --teal:#4fb6a8;
+    --border:#2e3340;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(180deg, transparent 0 40px, rgba(255,255,255,0.015) 40px 41px),
+      var(--asphalt);
+    color:var(--line);
+    font-family:'Inter', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1320px; margin:0 auto; padding:28px 24px 60px;}
+
+  /* dashed lane divider */
+  .lane{
+    height:0;
+    border-top:3px dashed var(--asphalt-3);
+    margin:26px 0;
+  }
+
+  header{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:6px;}
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--caution); display:flex; align-items:center; gap:8px; margin-bottom:8px;
+  }
+  .dot{width:7px; height:7px; border-radius:50%; background:var(--danger); box-shadow:0 0 0 0 rgba(224,85,95,.6); animation:pulse 1.8s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(224,85,95,.55);}
+    70%{box-shadow:0 0 0 8px rgba(224,85,95,0);}
+    100%{box-shadow:0 0 0 0 rgba(224,85,95,0);}
+  }
+  h1{
+    font-family:'Space Grotesk', sans-serif;
+    font-weight:700; font-size:32px; margin:0 0 4px;
+    letter-spacing:-.01em;
+  }
+  .subtitle{color:var(--line-dim); font-size:14px; max-width:560px;}
+  .status{
+    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--line-dim);
+    text-align:right; line-height:1.7;
+  }
+  .status b{color:var(--teal); font-weight:600;}
+
+  /* KPI row */
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:22px;}
+  .kpi{
+    background:var(--asphalt-2); border:1px solid var(--border); border-radius:2px;
+    padding:14px 16px; position:relative; overflow:hidden; display:flex; align-items:center; gap:14px;
+  }
+  .kpi::before{
+    content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--kpi-accent, var(--teal));
+  }
+  .kpi .emoji{font-size:28px; line-height:1; filter:grayscale(0) drop-shadow(0 0 6px rgba(0,0,0,.3));}
+  .kpi .num{font-family:'JetBrains Mono', monospace; font-size:26px; font-weight:600; color:var(--line); line-height:1.1;}
+  .kpi .lbl{font-size:11px; color:var(--line-dim); margin-top:2px; text-transform:uppercase; letter-spacing:.05em;}
+
+  /* secondary KPI strip (tasas) */
+  .kpis-mini{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:14px;}
+  .kpi-mini{
+    background:var(--asphalt-2); border:1px solid var(--border); border-radius:2px;
+    padding:12px 16px; text-align:center;
+  }
+  .kpi-mini .emoji{font-size:20px; display:block; margin-bottom:4px;}
+  .kpi-mini .num{font-family:'JetBrains Mono', monospace; font-size:20px; font-weight:600;}
+  .kpi-mini .lbl{font-size:10px; color:var(--line-dim); text-transform:uppercase; letter-spacing:.05em; margin-top:2px;}
+
+  .veh-emoji{margin-right:4px;}
+
+  /* filtros */
+  .filters{
+    display:flex; align-items:flex-end; gap:16px; flex-wrap:wrap;
+    margin-top:18px; padding:14px 16px; background:var(--asphalt-2);
+    border:1px solid var(--border); border-radius:2px;
+  }
+  .filter-group{display:flex; flex-direction:column; gap:5px;}
+  .filter-group label{
+    font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase;
+    letter-spacing:.06em; color:var(--line-dim);
+  }
+  .filter-group select{
+    background:var(--asphalt); color:var(--line); border:1px solid var(--border);
+    border-radius:2px; padding:7px 10px; font-family:'Inter', sans-serif; font-size:13px;
+    min-width:200px; cursor:pointer;
+  }
+  .filter-group select:focus{outline:1px solid var(--teal);}
+  #filtroReset{
+    background:transparent; color:var(--caution); border:1px solid var(--caution-dim);
+    border-radius:2px; padding:7px 12px; font-family:'JetBrains Mono', monospace; font-size:12px;
+    cursor:pointer; height:34px;
+  }
+  #filtroReset:hover{background:rgba(242,169,59,.1);}
+  .filter-count{
+    font-family:'JetBrains Mono', monospace; font-size:12px; color:var(--line-dim);
+    margin-left:auto; align-self:center;
+  }
+  .empty-state{
+    text-align:center; padding:30px; color:var(--line-dim);
+    font-family:'JetBrains Mono', monospace; font-size:13px;
+  }
+
+  /* main grid */
+  main{display:grid; grid-template-columns:1.55fr 1fr; gap:16px; margin-top:26px;}
+  .panel{
+    background:var(--asphalt-2); border:1px solid var(--border); border-radius:2px;
+    padding:16px 18px 18px;
+  }
+  .panel h2{
+    font-family:'Space Grotesk', sans-serif; font-size:14px; font-weight:600;
+    text-transform:uppercase; letter-spacing:.06em; margin:0 0 12px; color:var(--line);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .panel h2 span.tag{
+    font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--asphalt);
+    background:var(--caution); padding:2px 6px; border-radius:2px; letter-spacing:.02em;
+    text-transform:none;
+  }
+
+  #map{height:430px; border-radius:2px; position:relative;}
+  .map-wrap{position:relative;}
+  .radar{
+    position:absolute; top:10px; right:10px; width:26px; height:26px; z-index:1000;
+    border-radius:50%; border:1px solid var(--teal); opacity:.85; pointer-events:none;
+  }
+  .radar::after{
+    content:""; position:absolute; inset:0; border-radius:50%;
+    background:conic-gradient(from 0deg, rgba(79,182,168,.55), transparent 40%);
+    animation:spin 2.4s linear infinite;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  .charts-col{display:flex; flex-direction:column; gap:16px;}
+
+  /* feed table */
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  thead th{
+    text-align:left; font-family:'JetBrains Mono', monospace; font-size:11px;
+    text-transform:uppercase; letter-spacing:.05em; color:var(--line-dim);
+    border-bottom:1px dashed var(--border); padding:0 10px 10px;
+  }
+  tbody td{
+    padding:10px; border-bottom:1px solid var(--asphalt-3); vertical-align:top;
+  }
+  tbody tr:hover{background:rgba(255,255,255,.02);}
+  .sev{display:inline-block; width:8px; height:8px; border-radius:50%; margin-right:8px;}
+  .sev.high{background:var(--danger);}
+  .sev.mid{background:var(--caution);}
+  .sev.low{background:var(--teal);}
+  .badge{
+    font-family:'JetBrains Mono', monospace; font-size:11px; padding:2px 7px;
+    border:1px solid var(--border); border-radius:2px; color:var(--line-dim); white-space:nowrap;
+  }
+  a.src{color:var(--teal); text-decoration:none; font-size:12px;}
+  a.src:hover{text-decoration:underline;}
+
+  footer{
+    margin-top:30px; font-family:'JetBrains Mono', monospace; font-size:11px;
+    color:var(--line-dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
+  }
+
+  @media (max-width: 900px){
+    main{grid-template-columns:1fr;}
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    header{flex-direction:column; align-items:flex-start;}
+    .status{text-align:left;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <div class="eyebrow"><span class="dot"></span> Monitoreo activo — Rosario, Santa Fe</div>
+      <h1>Observatorio Inteligente de Siniestros Viales</h1>
+      <div class="subtitle">Noticias de medios locales, procesadas con IA y estructuradas automáticamente. Datos de ejemplo para maqueta — se reemplazan por el pipeline real de scraping.</div>
+    </div>
+    <div class="status">
+      ÚLTIMA ACTUALIZACIÓN<br>
+      <b id="clock">—</b><br>
+      Fuente: 2 medios · Ventana: 30 días<br>
+      <span style="color:var(--caution)">✨ Versión con íconos</span>
+    </div>
+  </header>
+
+  <div class="kpis" id="kpis"></div>
+  <div class="kpis-mini" id="kpisMini"></div>
+
+  <div class="filters" id="filters">
+    <div class="filter-group">
+      <label>Tipo de siniestro</label>
+      <select id="filtroTipo"><option value="todos">Todos</option></select>
+    </div>
+    <div class="filter-group">
+      <label>Gravedad</label>
+      <select id="filtroGravedad">
+        <option value="todos">Todas</option>
+        <option value="fallecidos">Con fallecidos</option>
+        <option value="heridos">Con heridos (sin fallecidos)</option>
+        <option value="sin">Solo daños materiales</option>
+      </select>
+    </div>
+    <button id="filtroReset">↺ Limpiar filtros</button>
+    <span class="filter-count" id="filtroCount"></span>
+  </div>
+
+  <main>
+    <div class="panel map-wrap">
+      <h2>Mapa de siniestros <span class="tag">30 días</span></h2>
+      <div id="map"></div>
+      <div class="radar"></div>
+    </div>
+
+    <div class="charts-col">
+      <div class="panel">
+        <h2>Por tipo de siniestro</h2>
+        <div id="chart-tipo" style="height:190px;"></div>
+      </div>
+      <div class="panel">
+        <h2>Por franja horaria</h2>
+        <div id="chart-hora" style="height:190px;"></div>
+      </div>
+    </div>
+  </main>
+
+  <div class="lane"></div>
+
+  <div class="panel">
+    <h2>Últimos siniestros registrados</h2>
+    <table>
+      <thead>
+        <tr><th></th><th>Fecha / hora</th><th>Ubicación</th><th>Tipo</th><th>Vehículos</th><th>🤕 Heridos</th><th>💀 Fallecidos</th><th>Clima</th><th>Fuente</th></tr>
+      </thead>
+      <tbody id="feed"></tbody>
+    </table>
+  </div>
+
+  <footer>
+    <span>OBSERVATORIO · Rosario, AR — MVP CoderCup</span>
+    <span>Streamlit / Python / BeautifulSoup / Gemini / SQLite / Plotly / Folium — pipeline sugerido</span>
+  </footer>
+</div>
+
+<script>
+/* =========================================================
+   DATOS DE EJEMPLO
+   Reemplazá este array por lo que saques de tu SQLite/CSV.
+   Cada registro necesita: fecha, hora, calle, lat, lng, tipo,
+   vehiculos, heridos, fallecidos, clima, link
+   ========================================================= */
+const incidentes = [
+  {fecha:"2026-08-14", hora:"08:12", calle:"Av. Pellegrini y Bv. Oroño", lat:-32.9455, lng:-60.6470, tipo:"Choque", vehiculos:"Auto / Moto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
+  {fecha:"2026-08-14", hora:"19:45", calle:"Av. Circunvalación 25 de Mayo y Ovidio Lagos", lat:-32.9280, lng:-60.6825, tipo:"Atropello", vehiculos:"Camioneta", heridos:1, fallecidos:1, clima:"Lluvia", link:"#"},
+  {fecha:"2026-08-13", hora:"14:20", calle:"San Martín y Mitre", lat:-32.9490, lng:-60.6390, tipo:"Colisión múltiple", vehiculos:"3 autos", heridos:2, fallecidos:0, clima:"Nublado", link:"#"},
+  {fecha:"2026-08-13", hora:"07:05", calle:"Av. Francia y Wilde", lat:-32.9525, lng:-60.6720, tipo:"Vuelco", vehiculos:"Auto", heridos:0, fallecidos:0, clima:"Despejado", link:"#"},
+  {fecha:"2026-08-12", hora:"22:30", calle:"Av. Godoy y Rueda", lat:-32.9605, lng:-60.6555, tipo:"Motociclista caído", vehiculos:"Moto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
+  {fecha:"2026-08-12", hora:"12:50", calle:"Bv. Oroño y Corrientes", lat:-32.9460, lng:-60.6395, tipo:"Choque", vehiculos:"Auto / Bicicleta", heridos:1, fallecidos:0, clima:"Ventoso", link:"#"},
+  {fecha:"2026-08-11", hora:"18:10", calle:"Av. Provincias Unidas y Uriburu", lat:-32.9210, lng:-60.6680, tipo:"Atropello", vehiculos:"Colectivo", heridos:2, fallecidos:0, clima:"Lluvia", link:"#"},
+  {fecha:"2026-08-11", hora:"06:40", calle:"Av. Alberdi y Ayacucho", lat:-32.9340, lng:-60.6280, tipo:"Choque", vehiculos:"2 autos", heridos:0, fallecidos:0, clima:"Neblina", link:"#"},
+  {fecha:"2026-08-10", hora:"23:55", calle:"Av. Circunvalación y San Lorenzo", lat:-32.9835, lng:-60.6710, tipo:"Vuelco", vehiculos:"Camioneta", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
+  {fecha:"2026-08-10", hora:"09:15", calle:"Mendoza y Balcarce", lat:-32.9455, lng:-60.6355, tipo:"Motociclista caído", vehiculos:"Moto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
+  {fecha:"2026-08-09", hora:"17:35", calle:"Echesortu, Av. Godoy y Biedma", lat:-32.9540, lng:-60.6610, tipo:"Choque", vehiculos:"Auto / Moto", heridos:1, fallecidos:0, clima:"Nublado", link:"#"},
+  {fecha:"2026-08-08", hora:"20:00", calle:"Av. Pellegrini y Moreno", lat:-32.9450, lng:-60.6440, tipo:"Atropello", vehiculos:"Auto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
+  {fecha:"2026-08-07", hora:"13:22", calle:"Sarmiento y Necochea", lat:-32.9500, lng:-60.6465, tipo:"Colisión múltiple", vehiculos:"2 autos / moto", heridos:3, fallecidos:0, clima:"Ventoso", link:"#"},
+  {fecha:"2026-08-06", hora:"05:50", calle:"Av. de la Travesía y Ruta 34", lat:-32.9150, lng:-60.6950, tipo:"Vuelco", vehiculos:"Camión", heridos:0, fallecidos:1, clima:"Neblina", link:"#"},
+  {fecha:"2026-08-05", hora:"16:48", calle:"Bv. Oroño y Av. Pellegrini", lat:-32.9458, lng:-60.6462, tipo:"Motociclista caído", vehiculos:"Moto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
+];
+
+/* ---------- reloj ---------- */
+document.getElementById('clock').textContent =
+  new Date().toLocaleString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+
+/* ---------- helpers de emoji ---------- */
+function vehiculoEmoji(v){
+  v = v.toLowerCase();
+  if(v.includes('moto')) return '🏍️';
+  if(v.includes('bici')) return '🚲';
+  if(v.includes('colectivo')) return '🚌';
+  if(v.includes('cami')) return '🚚';
+  if(v.includes('peat')) return '🚶';
+  return '🚗';
+}
+function climaEmoji(c){
+  c = c.toLowerCase();
+  if(c.includes('lluvia')) return '🌧️';
+  if(c.includes('nubl')) return '☁️';
+  if(c.includes('neblina')) return '🌫️';
+  if(c.includes('vent')) return '💨';
+  return '☀️';
+}
+function sevColor(i){
+  if(i.fallecidos>0) return '#e0555f';
+  if(i.heridos>0) return '#f2a93b';
+  return '#4fb6a8';
+}
+
+/* ---------- mapa base (se crea una sola vez) ---------- */
+const map = L.map('map', {zoomControl:true, attributionControl:false}).setView([-32.9468,-60.6393], 12.3);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19}).addTo(map);
+let markers = [];
+
+/* ---------- poblar el filtro de tipo ---------- */
+const tiposUnicos = [...new Set(incidentes.map(i=>i.tipo))].sort();
+const selectTipo = document.getElementById('filtroTipo');
+tiposUnicos.forEach(t=>{
+  const opt = document.createElement('option');
+  opt.value = t; opt.textContent = t;
+  selectTipo.appendChild(opt);
+});
+
+/* ---------- render principal: recibe el subconjunto ya filtrado ---------- */
+function render(data){
+
+  // contador de filtros
+  document.getElementById('filtroCount').textContent =
+    `Mostrando ${data.length} de ${incidentes.length} siniestros`;
+
+  // ----- KPIs principales -----
+  const total = data.length;
+  const heridos = data.reduce((a,i)=>a+i.heridos,0);
+  const fallecidos = data.reduce((a,i)=>a+i.fallecidos,0);
+  const semana = data.filter(i => new Date(i.fecha) >= new Date(Date.now()-7*864e5)).length;
+
+  const kpiData = [
+    {emoji:"💥", num:total, lbl:"Siniestros (30 días)", accent:"var(--teal)"},
+    {emoji:"📅", num:semana, lbl:"Últimos 7 días", accent:"var(--caution)"},
+    {emoji:"🤕", num:heridos, lbl:"Personas heridas", accent:"var(--caution)"},
+    {emoji:"💀", num:fallecidos, lbl:"Personas fallecidas", accent:"var(--danger)"},
+  ];
+  document.getElementById('kpis').innerHTML = kpiData.map(k =>
+    `<div class="kpi" style="--kpi-accent:${k.accent}">
+       <div class="emoji">${k.emoji}</div>
+       <div><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>
+     </div>`
+  ).join('');
+
+  // ----- KPIs secundarios (tasas) -----
+  const conFallecidos = data.filter(i=>i.fallecidos>0).length;
+  const letalidad = total ? ((conFallecidos/total)*100).toFixed(1) : "0.0";
+  const promedioDiario = (total/30).toFixed(1);
+  const diasDesdeUltimoFallecido = (() => {
+    const ordenFall = data.filter(i=>i.fallecidos>0).sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
+    if(!ordenFall.length) return "—";
+    return Math.floor((Date.now() - new Date(ordenFall[0].fecha)) / 864e5);
+  })();
+  const kpiMiniData = [
+    {emoji:"📊", num:`${letalidad}%`, lbl:"Tasa de letalidad"},
+    {emoji:"📈", num:promedioDiario, lbl:"Promedio diario"},
+    {emoji:"🕯️", num:diasDesdeUltimoFallecido, lbl:"Días sin fallecidos"},
+  ];
+  document.getElementById('kpisMini').innerHTML = kpiMiniData.map(k =>
+    `<div class="kpi-mini"><span class="emoji">${k.emoji}</span><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`
+  ).join('');
+
+  // ----- mapa: sacar markers viejos y poner los nuevos -----
+  markers.forEach(m=>map.removeLayer(m));
+  markers = data.map(i=>{
+    const icon = L.divIcon({
+      className: 'emoji-marker',
+      html: `<div style="
+          width:30px; height:30px; border-radius:50%;
+          background:${sevColor(i)}22; border:2px solid ${sevColor(i)};
+          display:flex; align-items:center; justify-content:center; font-size:15px;">
+          ${vehiculoEmoji(i.vehiculos)}
+        </div>`,
+      iconSize:[30,30], iconAnchor:[15,15],
+    });
+    const marker = L.marker([i.lat,i.lng], {icon}).addTo(map);
+    marker.bindPopup(
+      `<b>${vehiculoEmoji(i.vehiculos)} ${i.tipo}</b><br>${i.calle}<br>${i.fecha} · ${i.hora}<br>🤕 ${i.heridos} · 💀 ${i.fallecidos} · ${climaEmoji(i.clima)} ${i.clima}`
+    );
+    return marker;
+  });
+
+  // ----- chart: por tipo -----
+  const tipos = {};
+  data.forEach(i => tipos[i.tipo] = (tipos[i.tipo]||0)+1);
+  const tipoKeys = Object.keys(tipos);
+  Plotly.newPlot('chart-tipo', [{
+    x: tipoKeys.map(k=>tipos[k]),
+    y: tipoKeys,
+    type:'bar',
+    orientation:'h',
+    marker:{color:'#4fb6a8'},
+  }], {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
+    margin:{l:140, r:16, t:6, b:24},
+    xaxis:{gridcolor:'#2e3340', zeroline:false},
+    yaxis:{automargin:true},
+  }, {displayModeBar:false, responsive:true});
+
+  // ----- chart: por hora (0 a 23, como categorías -> nunca se confunde con fechas) -----
+  const horas = Array.from({length:24}, (_,h)=>h);
+  const conteoHoras = horas.map(h => data.filter(i => parseInt(i.hora.split(':')[0]) === h).length);
+  Plotly.newPlot('chart-hora', [{
+    x: horas.map(String),
+    y: conteoHoras,
+    type:'bar',
+    marker:{color:'#f2a93b'},
+  }], {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
+    margin:{l:36, r:16, t:6, b:28},
+    xaxis:{
+      gridcolor:'#2e3340', type:'category',
+      tickvals:['0','3','6','9','12','15','18','21'],
+      title:{text:'Hora del día', font:{size:10}},
+    },
+    yaxis:{gridcolor:'#2e3340', zeroline:false},
+    bargap:0.15,
+  }, {displayModeBar:false, responsive:true});
+
+  // ----- tabla feed -----
+  const feed = document.getElementById('feed');
+  if(!data.length){
+    feed.innerHTML = `<tr><td colspan="9" class="empty-state">Ningún siniestro coincide con estos filtros ⚠️</td></tr>`;
+    return;
+  }
+  const ordenados = [...data].sort((a,b)=> new Date(b.fecha+'T'+b.hora) - new Date(a.fecha+'T'+a.hora));
+  feed.innerHTML = ordenados.map(i=>{
+    const sevClass = i.fallecidos>0 ? 'high' : (i.heridos>0 ? 'mid' : 'low');
+    return `<tr>
+      <td><span class="sev ${sevClass}"></span></td>
+      <td class="badge">${i.fecha}<br>${i.hora}</td>
+      <td>${i.calle}</td>
+      <td>${i.tipo}</td>
+      <td><span class="veh-emoji">${vehiculoEmoji(i.vehiculos)}</span>${i.vehiculos}</td>
+      <td>${i.heridos}</td>
+      <td>${i.fallecidos}</td>
+      <td>${climaEmoji(i.clima)} ${i.clima}</td>
+      <td><a class="src" href="${i.link}" target="_blank">ver noticia →</a></td>
+    </tr>`;
+  }).join('');
+}
+
+/* ---------- lógica de filtrado ---------- */
+function aplicarFiltros(){
+  const tipo = document.getElementById('filtroTipo').value;
+  const gravedad = document.getElementById('filtroGravedad').value;
+
+  let data = incidentes;
+  if(tipo !== 'todos') data = data.filter(i => i.tipo === tipo);
+  if(gravedad === 'fallecidos') data = data.filter(i => i.fallecidos > 0);
+  else if(gravedad === 'heridos') data = data.filter(i => i.heridos > 0 && i.fallecidos === 0);
+  else if(gravedad === 'sin') data = data.filter(i => i.heridos === 0 && i.fallecidos === 0);
+
+  render(data);
+}
+
+document.getElementById('filtroTipo').addEventListener('change', aplicarFiltros);
+document.getElementById('filtroGravedad').addEventListener('change', aplicarFiltros);
+document.getElementById('filtroReset').addEventListener('click', ()=>{
+  document.getElementById('filtroTipo').value = 'todos';
+  document.getElementById('filtroGravedad').value = 'todos';
+  aplicarFiltros();
+});
+
+/* ---------- primer render ---------- */
+render(incidentes);
+</script>
+</body>
+</html>
