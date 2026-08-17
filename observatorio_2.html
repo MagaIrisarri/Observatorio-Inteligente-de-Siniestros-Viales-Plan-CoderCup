@@ -141,16 +141,6 @@
 
   #map{height:430px; border-radius:2px; position:relative;}
   .map-wrap{position:relative;}
-  .radar{
-    position:absolute; top:10px; right:10px; width:26px; height:26px; z-index:1000;
-    border-radius:50%; border:1px solid var(--teal); opacity:.85; pointer-events:none;
-  }
-  .radar::after{
-    content:""; position:absolute; inset:0; border-radius:50%;
-    background:conic-gradient(from 0deg, rgba(79,182,168,.55), transparent 40%);
-    animation:spin 2.4s linear infinite;
-  }
-  @keyframes spin{to{transform:rotate(360deg);}}
 
   .charts-col{display:flex; flex-direction:column; gap:16px;}
 
@@ -201,7 +191,7 @@
     <div class="status">
       ÚLTIMA ACTUALIZACIÓN<br>
       <b id="clock">—</b><br>
-      Fuente: 2 medios <br>
+      Fuente: 2 medios · Histórico completo<br>
       <span style="color:var(--caution)">✨ Versión con íconos</span>
     </div>
   </header>
@@ -229,9 +219,8 @@
 
   <main>
     <div class="panel map-wrap">
-      <h2>Mapa de siniestros</h2>
+      <h2>Mapa de siniestros <span class="tag">Histórico</span></h2>
       <div id="map"></div>
-      <div class="radar"></div>
     </div>
 
     <div class="charts-col">
@@ -260,7 +249,7 @@
 
   <footer>
     <span>OBSERVATORIO · Rosario, AR — MVP CoderCup</span>
-    <span>Streamlit / Python / BeautifulSoup / Gemini / SQLite / Plotly / Folium — pipeline sugerido</span>
+    <span>Fuentes: Rosario3 / La Capital</span>
   </footer>
 </div>
 
@@ -283,7 +272,8 @@ const incidentes = [
     "vehiculos": "Chevrolet Aveo",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.rosario3.com/policiales/un-automovilista-se-descompenso-perdio-el-control-y-choco-contra-el-frente-de-un-local-de-echesortu-20260811-0011.html"
   },
   {
@@ -297,7 +287,8 @@ const incidentes = [
     "vehiculos": "Chevrolet Aveo, Ford EcoSport, Volkswagen Suran",
     "heridos": 1,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.rosario3.com/informaciongeneral/fuerte-triple-choque-en-zona-oeste-dejo-heridos-y-genero-cortes-en-avenida-peron-20260811-0031.html"
   },
   {
@@ -311,7 +302,8 @@ const incidentes = [
     "vehiculos": "Motocicleta Motomel S2 150 cc, Camión con acoplado",
     "heridos": 2,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Llovizna",
+    "lluvia_mm": 2.6,
     "link": "https://www.rosario3.com/policiales/fuerte-choque-en-circunvalacion-dos-hombres-heridos-tras-caer-con-su-moto-debajo-de-un-acoplado-20260815-0003.html"
   },
   {
@@ -325,7 +317,8 @@ const incidentes = [
     "vehiculos": "automóvil",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.rosario3.com/informaciongeneral/se-distrajo-y-choco-contra-un-arbol-y-el-vallado-de-una-escuela-del-centro-de-rosario-20260810-0011.html"
   },
   {
@@ -339,7 +332,8 @@ const incidentes = [
     "vehiculos": "Taxi, Citroën",
     "heridos": 1,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Llovizna",
+    "lluvia_mm": 0.4,
     "link": "https://www.rosario3.com/informaciongeneral/taxista-perdio-el-control-y-choco-contra-el-frente-de-un-local-gastronomico-en-el-que-habia-un-cliente-pense-que-nos-iba-a-matar-20260724-0034.html"
   },
   {
@@ -353,7 +347,8 @@ const incidentes = [
     "vehiculos": "Citroën C3",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Lluvia",
+    "lluvia_mm": 9.4,
     "link": "https://www.rosario3.com/informaciongeneral/mordio-el-cordon-con-su-auto-y-volco-en-echesortu-20260731-0008.html"
   },
   {
@@ -367,7 +362,8 @@ const incidentes = [
     "vehiculos": "Peugeot, moto Bajaj Rouser 200",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.rosario3.com/informaciongeneral/fuerte-choque-entre-un-auto-y-un-moto-en-la-ruta-34-y-circunvalacion-de-rosario-20260727-0012.html"
   },
   {
@@ -381,7 +377,8 @@ const incidentes = [
     "vehiculos": "Chevrolet, Peugeot, Automóvil estacionado",
     "heridos": 2,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.rosario3.com/informaciongeneral/triple-choque-en-rosario-y-desvios-de-transito-hay-doble-cartel-de-pare-pero-no-frena-nadie-20260727-0054.html"
   },
   {
@@ -395,7 +392,8 @@ const incidentes = [
     "vehiculos": "automovil, motocicleta",
     "heridos": 1,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Lluvia intensa",
+    "lluvia_mm": 43.3,
     "link": "https://www.rosario3.com/informaciongeneral/video-asi-fue-el-choque-del-automovilista-que-embistio-una-moto-y-huyo-20260806-0041.html"
   },
   {
@@ -409,7 +407,8 @@ const incidentes = [
     "vehiculos": "Colectivo Linea 121, Peugeot Partner Patagónica, Peugeot 308, Peugeot 408",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Llovizna",
+    "lluvia_mm": 2.6,
     "link": "https://www.rosario3.com/informaciongeneral/choque-en-barrio-godoy-un-colectivo-colisiono-contra-tres-autos-estacionados-20260815-0004.html"
   },
   {
@@ -423,7 +422,8 @@ const incidentes = [
     "vehiculos": "Vehículo de gran porte",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/insolito-corte-transito-rosario-un-semaforo-se-partio-y-cayo-plena-calle-n10268399.html"
   },
   {
@@ -437,7 +437,8 @@ const incidentes = [
     "vehiculos": "Jeep Compact, Peugeot 208, Renault Clio",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Lluvia",
+    "lluvia_mm": 10.5,
     "link": "https://www.lacapital.com.ar/la-ciudad/un-choque-impresionante-termino-un-jeep-dado-vuelta-el-centro-rosario-n10270192.html"
   },
   {
@@ -451,7 +452,8 @@ const incidentes = [
     "vehiculos": "Motomel DLX 110, Renault 19, Automóvil estacionado",
     "heridos": 0,
     "fallecidos": 1,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/fallecieron-dos-motociclistas-la-zona-oeste-poco-mas-12-horas-diferencia-n10268604.html"
   },
   {
@@ -465,7 +467,8 @@ const incidentes = [
     "vehiculos": "Motocicleta Yamaha Tenere 250cc, Colectivo Linea 129",
     "heridos": 0,
     "fallecidos": 1,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/fallecio-un-motociclista-luego-un-choque-un-colectivo-bulevar-orono-n10264915.html"
   },
   {
@@ -479,7 +482,8 @@ const incidentes = [
     "vehiculos": "Fiat Palio",
     "heridos": 0,
     "fallecidos": 1,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/choque-estremecedor-y-vecinos-atrapados-un-automovilista-murio-la-colision-n10259091.html"
   },
   {
@@ -493,7 +497,8 @@ const incidentes = [
     "vehiculos": "Peugeot 307, Chevrolet Corsa",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/un-choque-impresionante-avenida-pellegrini-termino-un-auto-dado-vuelta-n10257107.html"
   },
   {
@@ -507,7 +512,8 @@ const incidentes = [
     "vehiculos": "Toyota Yaris, Citroën C4",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/una-diputada-provincial-protagonizo-un-siniestro-vial-la-zona-oeste-rosario-no-hubo-heridos-gravedad-n10259230.html"
   },
   {
@@ -521,7 +527,8 @@ const incidentes = [
     "vehiculos": "Motocicleta, Camión, Toyota Hilux",
     "heridos": 0,
     "fallecidos": 1,
-    "clima": "No registrado",
+    "clima": "Despejado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/un-motociclista-fallecio-un-choque-un-camion-avenida-circunvalacion-n10259844.html"
   },
   {
@@ -535,7 +542,8 @@ const incidentes = [
     "vehiculos": "Peugeot Partner",
     "heridos": 0,
     "fallecidos": 1,
-    "clima": "No registrado",
+    "clima": "Llovizna",
+    "lluvia_mm": 0.2,
     "link": "https://www.lacapital.com.ar/la-ciudad/muerte-zona-norte-un-hombre-fue-atropellado-cuando-cruzaba-bulevar-rondeau-n10243561.html"
   },
   {
@@ -549,7 +557,8 @@ const incidentes = [
     "vehiculos": "Corven Energy, Peugeot 206",
     "heridos": 1,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Lluvia",
+    "lluvia_mm": 8.5,
     "link": "https://www.lacapital.com.ar/policiales/robo-huyo-y-termino-el-hospital-despues-un-choque-haber-cruzado-rojo-n10252575.html"
   },
   {
@@ -563,7 +572,8 @@ const incidentes = [
     "vehiculos": "motocicleta Honda Wave, camión",
     "heridos": 0,
     "fallecidos": 1,
-    "clima": "No registrado",
+    "clima": "Llovizna",
+    "lluvia_mm": 0.5,
     "link": "https://www.lacapital.com.ar/la-ciudad/choque-circunvalacion-murio-un-motociclista-y-denuncian-que-un-conductor-se-fugo-n10245296.html"
   },
   {
@@ -577,7 +587,8 @@ const incidentes = [
     "vehiculos": "Fiat Punto, Peugeot 208, Dodge RAM, Toyota Hilux, Pick up",
     "heridos": 0,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Parcialmente nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/un-perro-suelto-avenida-circunvalacion-provoco-un-gran-choque-cadena-n10249440.html"
   },
   {
@@ -591,7 +602,8 @@ const incidentes = [
     "vehiculos": "Taxi Fiat Cronos, Volkswagen Gol",
     "heridos": 2,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
     "link": "https://www.lacapital.com.ar/la-ciudad/un-choque-fortisimo-avenida-pellegrini-termino-un-taxi-y-otro-auto-destrozados-n10251072.html"
   },
   {
@@ -605,7 +617,8 @@ const incidentes = [
     "vehiculos": "Camión",
     "heridos": 0,
     "fallecidos": 1,
-    "clima": "No registrado",
+    "clima": "Lluvia",
+    "lluvia_mm": 1.6,
     "link": "https://www.lacapital.com.ar/la-ciudad/tragedia-el-puerto-rosario-investigan-la-muerte-un-camionero-la-entrada-n10239637.html"
   },
   {
@@ -619,7 +632,8 @@ const incidentes = [
     "vehiculos": "Automóvil Volkswagen",
     "heridos": 1,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Lluvia",
+    "lluvia_mm": 1.6,
     "link": "https://www.lacapital.com.ar/la-ciudad/choques-auto-y-un-hombre-atropellado-una-chica-15-anos-cual-es-la-sancion-n10239852.html"
   },
   {
@@ -633,7 +647,8 @@ const incidentes = [
     "vehiculos": "Camión Ford Cargo 1722, Camión con volquete",
     "heridos": 1,
     "fallecidos": 0,
-    "clima": "No registrado",
+    "clima": "Llovizna",
+    "lluvia_mm": 0.9,
     "link": "https://www.lacapital.com.ar/la-ciudad/choque-camiones-circunvalacion-y-uriburu-un-chofer-quedo-atrapado-n10239918.html"
   }
 ];
@@ -654,9 +669,12 @@ function vehiculoEmoji(v){
 }
 function climaEmoji(c){
   c = c.toLowerCase();
-  if(c.includes('lluvia')) return '🌧️';
+  if(c.includes('tormenta')) return '⛈️';
+  if(c.includes('nieve')) return '❄️';
+  if(c.includes('chubasco')) return '🌦️';
+  if(c.includes('lluvia') || c.includes('llovizna')) return '🌧️';
+  if(c.includes('niebla') || c.includes('neblina')) return '🌫️';
   if(c.includes('nubl')) return '☁️';
-  if(c.includes('neblina')) return '🌫️';
   if(c.includes('vent')) return '💨';
   return '☀️';
 }
@@ -664,6 +682,9 @@ function sevColor(i){
   if(i.fallecidos>0) return '#e0555f';
   if(i.heridos>0) return '#f2a93b';
   return '#4fb6a8';
+}
+function lluviaTexto(i){
+  return (i.lluvia_mm && i.lluvia_mm > 0) ? ` (${i.lluvia_mm} mm)` : '';
 }
 
 /* ---------- mapa base (se crea una sola vez) ---------- */
@@ -694,7 +715,7 @@ function render(data){
   const semana = data.filter(i => new Date(i.fecha) >= new Date(Date.now()-7*864e5)).length;
 
   const kpiData = [
-    {emoji:"💥", num:total, lbl:"Siniestros (30 días)", accent:"var(--teal)"},
+    {emoji:"💥", num:total, lbl:"Siniestros totales", accent:"var(--teal)"},
     {emoji:"📅", num:semana, lbl:"Últimos 7 días", accent:"var(--caution)"},
     {emoji:"🤕", num:heridos, lbl:"Personas heridas", accent:"var(--caution)"},
     {emoji:"💀", num:fallecidos, lbl:"Personas fallecidas", accent:"var(--danger)"},
@@ -709,18 +730,11 @@ function render(data){
   // ----- KPIs secundarios (tasas) -----
   const conFallecidos = data.filter(i=>i.fallecidos>0).length;
   const letalidad = total ? ((conFallecidos/total)*100).toFixed(1) : "0.0";
-  const promedioDiario = (() => {
-    const fechasValidas = data.map(i => new Date(i.fecha)).filter(d => !isNaN(d));
-    if (!fechasValidas.length) return "0.0";
-
-    const min = Math.min(...fechasValidas);   // fecha más vieja
-    const max = Math.max(...fechasValidas);   // fecha más nueva
-
-    // diferencia en días entre ambas fechas, +1 para incluir el primer y el último día
-    const dias = Math.max(1, Math.round((max - min) / 864e5) + 1);
-
-    return (total / dias).toFixed(1);
-  })();
+  const fechasValidas = data.map(i => new Date(i.fecha).getTime()).filter(t => !isNaN(t));
+  const diasCubiertos = fechasValidas.length
+    ? Math.round((Math.max(...fechasValidas) - Math.min(...fechasValidas)) / 864e5) + 1
+    : 1;
+  const promedioDiario = (total/diasCubiertos).toFixed(1);
   const diasDesdeUltimoFallecido = (() => {
     const ordenFall = data.filter(i=>i.fallecidos>0).sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
     if(!ordenFall.length) return "—";
@@ -750,7 +764,7 @@ function render(data){
     });
     const marker = L.marker([i.lat,i.lng], {icon}).addTo(map);
     marker.bindPopup(
-      `<b>${vehiculoEmoji(i.vehiculos)} ${i.tipo}</b><br>${i.calle}<br>${i.fecha} · ${i.hora}<br>🤕 ${i.heridos} · 💀 ${i.fallecidos} · ${climaEmoji(i.clima)} ${i.clima}`
+      `<b>${vehiculoEmoji(i.vehiculos)} ${i.tipo}</b><br>${i.calle}<br>${i.fecha} · ${i.hora}<br>🤕 ${i.heridos} · 💀 ${i.fallecidos} · ${climaEmoji(i.clima)} ${i.clima}${lluviaTexto(i)}`
     );
     return marker;
   });
@@ -811,7 +825,7 @@ function render(data){
       <td><span class="veh-emoji">${vehiculoEmoji(i.vehiculos)}</span>${i.vehiculos}</td>
       <td>${i.heridos}</td>
       <td>${i.fallecidos}</td>
-      <td>${climaEmoji(i.clima)} ${i.clima}</td>
+      <td>${climaEmoji(i.clima)} ${i.clima}${lluviaTexto(i)}</td>
       <td><a class="src" href="${i.link}" target="_blank">ver noticia →</a></td>
     </tr>`;
   }).join('');

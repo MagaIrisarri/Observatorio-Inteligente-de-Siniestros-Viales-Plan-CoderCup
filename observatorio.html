@@ -141,16 +141,6 @@
 
   #map{height:430px; border-radius:2px; position:relative;}
   .map-wrap{position:relative;}
-  .radar{
-    position:absolute; top:10px; right:10px; width:26px; height:26px; z-index:1000;
-    border-radius:50%; border:1px solid var(--teal); opacity:.85; pointer-events:none;
-  }
-  .radar::after{
-    content:""; position:absolute; inset:0; border-radius:50%;
-    background:conic-gradient(from 0deg, rgba(79,182,168,.55), transparent 40%);
-    animation:spin 2.4s linear infinite;
-  }
-  @keyframes spin{to{transform:rotate(360deg);}}
 
   .charts-col{display:flex; flex-direction:column; gap:16px;}
 
@@ -201,7 +191,7 @@
     <div class="status">
       ÚLTIMA ACTUALIZACIÓN<br>
       <b id="clock">—</b><br>
-      Fuente: 2 medios · Ventana: 30 días<br>
+      Fuente: 2 medios · Histórico completo<br>
       <span style="color:var(--caution)">✨ Versión con íconos</span>
     </div>
   </header>
@@ -229,9 +219,8 @@
 
   <main>
     <div class="panel map-wrap">
-      <h2>Mapa de siniestros <span class="tag">30 días</span></h2>
+      <h2>Mapa de siniestros <span class="tag">Histórico</span></h2>
       <div id="map"></div>
-      <div class="radar"></div>
     </div>
 
     <div class="charts-col">
@@ -260,7 +249,7 @@
 
   <footer>
     <span>OBSERVATORIO · Rosario, AR — MVP CoderCup</span>
-    <span>Streamlit / Python / BeautifulSoup / Gemini / SQLite / Plotly / Folium — pipeline sugerido</span>
+    <span>Fuentes: Rosario3 / La Capital</span>
   </footer>
 </div>
 
@@ -305,9 +294,12 @@ function vehiculoEmoji(v){
 }
 function climaEmoji(c){
   c = c.toLowerCase();
-  if(c.includes('lluvia')) return '🌧️';
+  if(c.includes('tormenta')) return '⛈️';
+  if(c.includes('nieve')) return '❄️';
+  if(c.includes('chubasco')) return '🌦️';
+  if(c.includes('lluvia') || c.includes('llovizna')) return '🌧️';
+  if(c.includes('niebla') || c.includes('neblina')) return '🌫️';
   if(c.includes('nubl')) return '☁️';
-  if(c.includes('neblina')) return '🌫️';
   if(c.includes('vent')) return '💨';
   return '☀️';
 }
@@ -315,6 +307,9 @@ function sevColor(i){
   if(i.fallecidos>0) return '#e0555f';
   if(i.heridos>0) return '#f2a93b';
   return '#4fb6a8';
+}
+function lluviaTexto(i){
+  return (i.lluvia_mm && i.lluvia_mm > 0) ? ` (${i.lluvia_mm} mm)` : '';
 }
 
 /* ---------- mapa base (se crea una sola vez) ---------- */
@@ -345,7 +340,7 @@ function render(data){
   const semana = data.filter(i => new Date(i.fecha) >= new Date(Date.now()-7*864e5)).length;
 
   const kpiData = [
-    {emoji:"💥", num:total, lbl:"Siniestros (30 días)", accent:"var(--teal)"},
+    {emoji:"💥", num:total, lbl:"Siniestros totales", accent:"var(--teal)"},
     {emoji:"📅", num:semana, lbl:"Últimos 7 días", accent:"var(--caution)"},
     {emoji:"🤕", num:heridos, lbl:"Personas heridas", accent:"var(--caution)"},
     {emoji:"💀", num:fallecidos, lbl:"Personas fallecidas", accent:"var(--danger)"},
@@ -360,7 +355,11 @@ function render(data){
   // ----- KPIs secundarios (tasas) -----
   const conFallecidos = data.filter(i=>i.fallecidos>0).length;
   const letalidad = total ? ((conFallecidos/total)*100).toFixed(1) : "0.0";
-  const promedioDiario = (total/30).toFixed(1);
+  const fechasValidas = data.map(i => new Date(i.fecha).getTime()).filter(t => !isNaN(t));
+  const diasCubiertos = fechasValidas.length
+    ? Math.round((Math.max(...fechasValidas) - Math.min(...fechasValidas)) / 864e5) + 1
+    : 1;
+  const promedioDiario = (total/diasCubiertos).toFixed(1);
   const diasDesdeUltimoFallecido = (() => {
     const ordenFall = data.filter(i=>i.fallecidos>0).sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
     if(!ordenFall.length) return "—";
@@ -390,7 +389,7 @@ function render(data){
     });
     const marker = L.marker([i.lat,i.lng], {icon}).addTo(map);
     marker.bindPopup(
-      `<b>${vehiculoEmoji(i.vehiculos)} ${i.tipo}</b><br>${i.calle}<br>${i.fecha} · ${i.hora}<br>🤕 ${i.heridos} · 💀 ${i.fallecidos} · ${climaEmoji(i.clima)} ${i.clima}`
+      `<b>${vehiculoEmoji(i.vehiculos)} ${i.tipo}</b><br>${i.calle}<br>${i.fecha} · ${i.hora}<br>🤕 ${i.heridos} · 💀 ${i.fallecidos} · ${climaEmoji(i.clima)} ${i.clima}${lluviaTexto(i)}`
     );
     return marker;
   });
@@ -451,7 +450,7 @@ function render(data){
       <td><span class="veh-emoji">${vehiculoEmoji(i.vehiculos)}</span>${i.vehiculos}</td>
       <td>${i.heridos}</td>
       <td>${i.fallecidos}</td>
-      <td>${climaEmoji(i.clima)} ${i.clima}</td>
+      <td>${climaEmoji(i.clima)} ${i.clima}${lluviaTexto(i)}</td>
       <td><a class="src" href="${i.link}" target="_blank">ver noticia →</a></td>
     </tr>`;
   }).join('');

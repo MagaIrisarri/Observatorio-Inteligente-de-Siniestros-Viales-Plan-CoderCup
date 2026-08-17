@@ -1,9 +1,9 @@
 """
-Convierte siniestros_rosario.csv al array `incidentes` que espera el
+Convierte siniestros_rosario_con_clima.csv al array `incidentes` que espera el
 dashboard HTML, geocodificando con la API Georef (datos.gob.ar).
 
 Uso:
-    python csv_a_dashboard.py siniestros_rosario.csv observatorio.html
+    python csv_a_dashboard.py siniestros_rosario_con_clima.csv observatorio.html
 
 Genera observatorio_con_datos.html con el array ya insertado, y
 sin_ubicacion_exacta.json con los siniestros de ruta/km que no se
@@ -300,6 +300,19 @@ def inferir_clima(resumen):
     return "No registrado"
 
 
+def clima_de_fila(fila, resumen):
+    """
+    Usa el clima real (columna clima_real, agregado por agregar_clima.py a
+    partir de Open-Meteo) en vez de adivinarlo con palabras clave del
+    resumen. Si el CSV es viejo y no tiene esa columna, o vino vacío/
+    "Desconocido" para esa fecha, cae de nuevo a la inferencia por texto.
+    """
+    clima_real = (fila.get("clima_real") or "").strip()
+    if clima_real and clima_real != "Desconocido":
+        return clima_real
+    return inferir_clima(resumen)
+
+
 # ---------- conversión principal ----------
 def convertir(path_csv):
     filas = leer_csv_robusto(path_csv)
@@ -365,7 +378,8 @@ def convertir(path_csv):
                 "vehiculos": vehiculos,
                 "heridos": int(float(fila.get("cantidad_heridos") or 0)),
                 "fallecidos": int(float(fila.get("cantidad_fallecidos") or 0)),
-                "clima": inferir_clima(resumen),
+                "clima": clima_de_fila(fila, resumen),
+                "lluvia_mm": float(fila.get("lluvia_mm") or 0.0),
                 "link": url or "#",
             })
             continue
@@ -408,7 +422,8 @@ def convertir(path_csv):
             "vehiculos": vehiculos,
             "heridos": int(float(fila.get("cantidad_heridos") or 0)),
             "fallecidos": int(float(fila.get("cantidad_fallecidos") or 0)),
-            "clima": inferir_clima(resumen),
+            "clima": clima_de_fila(fila, resumen),
+            "lluvia_mm": float(fila.get("lluvia_mm") or 0.0),
             "link": url or "#",
         })
 
@@ -439,7 +454,7 @@ def inyectar_en_html(incidentes, path_html_entrada, path_html_salida):
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print("Uso: python csv_a_dashboard.py siniestros_rosario.csv observatorio.html")
+        print("Uso: python csv_a_dashboard.py siniestros_rosario_con_clima.csv observatorio.html")
         sys.exit(1)
 
     path_csv, path_html = sys.argv[1], sys.argv[2]
