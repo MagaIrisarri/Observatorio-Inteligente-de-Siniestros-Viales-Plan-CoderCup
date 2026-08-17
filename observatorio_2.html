@@ -201,7 +201,7 @@
     <div class="status">
       ÚLTIMA ACTUALIZACIÓN<br>
       <b id="clock">—</b><br>
-      Fuente: 2 medios · Ventana: 30 días<br>
+      Fuente: 2 medios <br>
       <span style="color:var(--caution)">✨ Versión con íconos</span>
     </div>
   </header>
@@ -229,7 +229,7 @@
 
   <main>
     <div class="panel map-wrap">
-      <h2>Mapa de siniestros <span class="tag">30 días</span></h2>
+      <h2>Mapa de siniestros</h2>
       <div id="map"></div>
       <div class="radar"></div>
     </div>
@@ -709,7 +709,18 @@ function render(data){
   // ----- KPIs secundarios (tasas) -----
   const conFallecidos = data.filter(i=>i.fallecidos>0).length;
   const letalidad = total ? ((conFallecidos/total)*100).toFixed(1) : "0.0";
-  const promedioDiario = (total/30).toFixed(1);
+  const promedioDiario = (() => {
+    const fechasValidas = data.map(i => new Date(i.fecha)).filter(d => !isNaN(d));
+    if (!fechasValidas.length) return "0.0";
+
+    const min = Math.min(...fechasValidas);   // fecha más vieja
+    const max = Math.max(...fechasValidas);   // fecha más nueva
+
+    // diferencia en días entre ambas fechas, +1 para incluir el primer y el último día
+    const dias = Math.max(1, Math.round((max - min) / 864e5) + 1);
+
+    return (total / dias).toFixed(1);
+  })();
   const diasDesdeUltimoFallecido = (() => {
     const ordenFall = data.filter(i=>i.fallecidos>0).sort((a,b)=> new Date(b.fecha)-new Date(a.fecha));
     if(!ordenFall.length) return "—";

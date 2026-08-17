@@ -9,6 +9,7 @@ from pydantic import BaseModel, Field
 from google import genai
 from google.genai import types
 from dotenv import load_dotenv
+from typing import Literal, Optional
 
 MODEL_NAME = "gemini-3.1-flash-lite"
 ARCHIVO_SINIESTROS = "siniestros_rosario.csv"
@@ -24,12 +25,36 @@ load_dotenv()
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 
 # 1. Definir el esquema estructurado para Pydantic
+
+
 class SiniestroVialSchema(BaseModel):
     es_siniestro_vial: bool = Field(description="true si es un choque/accidente de tránsito, false si no")
     fecha_siniestro: str = Field(description="Fecha en formato YYYY-MM-DD o 'Desconocido'")
     hora_aprox: str = Field(description="Hora aproximada en formato HH:MM o 'Desconocido'")
-    ubicacion_calle1: str = Field(description="Nombre de la calle/avenida principal")
-    ubicacion_calle2: str = Field(description="Esquina/cruce si aplica, o 'N/A'")
+
+    tipo_ubicacion: Literal["interseccion", "altura", "ruta_km", "desconocida"] = Field(
+    description=(
+        "Elegí 'interseccion' siempre que el texto mencione DOS calles/avenidas "
+        "relacionadas con el lugar del hecho (aunque una sea 'la calle que cruzaba' "
+        "o 'la calle que circulaba'), incluso si no dice explícitamente 'esquina' o 'cruce'. "
+        "Usá 'altura' SOLO si el texto da un número de puerta/altura y ninguna segunda calle. "
+        "Si tenés dudas entre las dos, preferí 'interseccion'."
+    )
+)
+    ubicacion_calle1: str = Field(description="Nombre de la calle/avenida/ruta principal")
+    ubicacion_calle2: Optional[str] = Field(
+        default=None, description="Segunda calle SOLO si tipo_ubicacion es 'interseccion'. None en cualquier otro caso."
+    )
+    altura: Optional[int] = Field(
+        default=None, description="Número de puerta/altura SOLO si tipo_ubicacion es 'altura'. None en cualquier otro caso."
+    )
+    ruta_nombre: Optional[str] = Field(
+        default=None, description="Nombre de la ruta/autopista SOLO si tipo_ubicacion es 'ruta_km' (ej. 'Autopista Rosario-Santa Fe', 'RN 34'). None en cualquier otro caso."
+    )
+    kilometro: Optional[float] = Field(
+        default=None, description="Kilómetro SOLO si tipo_ubicacion es 'ruta_km' y el texto lo menciona. None si no se menciona o no aplica."
+    )
+
     ciudad: str = Field(default="Rosario", description="Ciudad del siniestro")
     vehiculos_involucrados: list[str] = Field(description="Lista de vehículos (ej. ['Ford EcoSport', 'Colectivo Linea K'])")
     hubo_peatones: bool = Field(description="true si hubo peatones involucrados")
@@ -189,7 +214,16 @@ def guardar_resultado(datos_json, url, path=ARCHIVO_SINIESTROS):
     """
     Agrega una noticia estructurada al CSV de siniestros (modo append, nunca pisa).
     Escribe el header solo si el archivo todavía no existe.
+
+    Los siniestros en ruta/autopista con kilómetro (tipo_ubicacion == "ruta_km")
+    NO se guardan: no hay forma de ubicarlos con precisión en el mapa (Georef
+    no tiene puntos kilométricos), así que directamente no entran al CSV.
+    Devuelve True si se guardó, False si se descartó por este motivo.
     """
+    if datos_json.get("tipo_ubicacion") == "ruta_km":
+        print(f"⏭️  Es siniestro vial pero en ruta/km (sin ubicación precisa), no se guarda: {url}")
+        return False
+
     datos_para_tabla = datos_json.copy()
     datos_para_tabla["vehiculos_involucrados"] = ", ".join(datos_para_tabla["vehiculos_involucrados"])
     datos_para_tabla["url"] = url
@@ -197,6 +231,7 @@ def guardar_resultado(datos_json, url, path=ARCHIVO_SINIESTROS):
     df = pd.DataFrame([datos_para_tabla])
     existe = os.path.exists(path)
     df.to_csv(path, mode="a", header=not existe, index=False, encoding="utf-8-sig")
+    return True
 
 
 if __name__ == "__main__":

@@ -1,11 +1,13 @@
 """
 Convierte siniestros_rosario.csv al array `incidentes` que espera el
-dashboard HTML, geocodificando las calles con Nominatim (OpenStreetMap).
+dashboard HTML, geocodificando con la API Georef (datos.gob.ar).
 
 Uso:
     python csv_a_dashboard.py siniestros_rosario.csv observatorio.html
 
-Genera observatorio_con_datos.html con el array ya insertado.
+Genera observatorio_con_datos.html con el array ya insertado, y
+sin_ubicacion_exacta.json con los siniestros de ruta/km que no se
+pueden ubicar en un mapa de calles.
 """
 import csv
 import io
@@ -13,8 +15,15 @@ import json
 import re
 import sys
 import time
+import unicodedata
 import urllib.parse
 import urllib.request
+
+# En Windows, si la salida se redirige a un pipe (ej. "| findstr"), Python
+# usa cp1252 en vez de UTF-8 y los emojis de los prints (⚠️, etc.) tiran
+# UnicodeEncodeError. Forzamos UTF-8 siempre para evitarlo.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
 
 CACHE_GEOCODING = "geocache.json"
 
@@ -24,34 +33,41 @@ def leer_csv_robusto(path):
     with open(path, encoding="utf-8-sig", newline="") as f:
         contenido = f.read()
 
-    reader = csv.DictReader(io.StringIO(contenido))
-    fieldnames = reader.fieldnames
-    filas = list(reader)
+    reader = csv.reader(io.StringIO(contenido))
+    fieldnames = next(reader)
+    n = len(fieldnames)
 
     filas_finales = []
     reparadas = 0
-    for fila in filas:
-        # una fila corrupta (formato viejo) no tiene 'url' poblado:
-        # todo quedó pegado en la primera columna
-        if fila.get("url"):
-            filas_finales.append(fila)
+    sin_reparar = 0
+
+    for fila_cruda in reader:
+        if not fila_cruda or all(v == "" for v in fila_cruda):
+            continue  # línea vacía
+
+        if len(fila_cruda) == n:
+            filas_finales.append(dict(zip(fieldnames, fila_cruda)))
             continue
 
-        primera_col = fieldnames[0]
-        contenido_fila = fila.get(primera_col) or ""
-        sub_reader = csv.reader(io.StringIO(contenido_fila))
-        valores = next(sub_reader, [])
+        # quedó partida en menos (o más) campos de los que debería --
+        # la reconstruimos pegando de nuevo los pedazos con comas y
+        # re-parseando, sin importar en cuántos fragmentos haya quedado
+        reconstruida = ",".join(fila_cruda)
+        valores = next(csv.reader(io.StringIO(reconstruida)), [])
 
-        if len(valores) == len(fieldnames):
+        if len(valores) == n:
             filas_finales.append(dict(zip(fieldnames, valores)))
             reparadas += 1
         else:
-            # no pudimos reparar esta fila puntual: la dejamos como está
-            # (probablemente se omita más adelante por falta de datos)
-            filas_finales.append(fila)
+            # no se pudo reparar -- la dejamos pasar como está (va a
+            # fallar más adelante por falta de datos, pero no rompe nada)
+            filas_finales.append(dict(zip(fieldnames, fila_cruda)))
+            sin_reparar += 1
 
     if reparadas:
         print(f"⚠️  Reparé {reparadas} fila(s) con el formato viejo (colapsadas).")
+    if sin_reparar:
+        print(f"⚠️  {sin_reparar} fila(s) no se pudieron reparar del todo -- revisalas a mano en el CSV.")
 
     return filas_finales
 
@@ -71,10 +87,7 @@ def guardar_cache(cache):
 
 
 def _consultar_georef(direccion):
-    """
-    Consulta el endpoint /direcciones de Georef (datos.gob.ar).
-    Acepta directamente el formato "Calle1 y Calle2" o "Calle1 esquina Calle2".
-    """
+    """Consulta el endpoint /direcciones de Georef (datos.gob.ar)."""
     url = "https://apis.datos.gob.ar/georef/api/direcciones?" + urllib.parse.urlencode({
         "direccion": direccion,
         "provincia": "santa fe",
@@ -91,7 +104,6 @@ def _consultar_georef(direccion):
             lat, lon = ubicacion.get("lat"), ubicacion.get("lon")
             if lat is not None and lon is not None:
                 return lat, lon
-        # diagnóstico: no hubo resultado, mostramos por qué
         print(f"     (0 resultados) URL: {url}")
     except Exception as e:
         print(f"  ⚠️  Error consultando Georef '{direccion}': {e}")
@@ -106,42 +118,161 @@ PREFIJOS_TIPO_VIA = re.compile(
 
 def limpiar_nombre_calle(calle):
     """
-    Saca el prefijo de tipo de vía (Avenida, Bv., etc.) del nombre.
-    Georef restringe la búsqueda por categoría cuando detecta esa palabra
-    en la consulta, y si la calle real está categorizada distinto (ej.
-    "CALLE" en vez de "AV"), la consulta no matchea nada.
+    Saca el prefijo de tipo de vía (Avenida, Bv., etc.). Georef restringe
+    la búsqueda por categoría cuando detecta esa palabra, y si la calle
+    real está categorizada distinto (ej. "CALLE" en vez de "AV"), la
+    consulta no matchea nada.
     """
-    return PREFIJOS_TIPO_VIA.sub("", calle).strip()
+    return PREFIJOS_TIPO_VIA.sub("", calle or "").strip()
+
+
+# Avenidas tipo autopista/circunvalación: cruzan otras calles por viaducto,
+# nunca van a estar en la base de intersecciones de Georef. Se cargan a mano
+# una vez confirmadas (ej. buscando la esquina en Google Maps).
+# Clave: frozenset con las dos calles ya limpias (sin prefijo), en minúscula.
+CORRECCIONES_INTERSECCIONES = {
+    # Pellegrini y Circunvalación -- ni la avenida ni su colectora (Juan Pablo II)
+    # ni el alias "Avenida Che Guevara" tienen esta intersección cargada en
+    # Georef. Coordenada real, sacada de Google Maps.
+    # Claves SIN tildes -- _clave_correccion saca los acentos antes de comparar.
+    frozenset({"circunvalacion", "pellegrini"}): (-32.948844, -60.721929),
+    # Ruta 34 y Circunvalación -- mismo problema, coordenada real de Google Maps.
+    frozenset({"circunvalacion", "ruta 34"}): (-32.893655, -60.719316),
+    # Doctor Vicente Medina y Circunvalación -- mismo problema.
+    frozenset({"circunvalacion", "doctor vicente medina"}): (-33.00075, -60.689722),
+}
+
+
+def _sin_acentos(texto):
+    """Saca los acentos para comparar sin importar si el texto los tiene o no."""
+    normalizado = unicodedata.normalize("NFKD", texto or "")
+    return "".join(c for c in normalizado if not unicodedata.combining(c))
+
+
+def _clave_correccion(calle1, calle2):
+    return frozenset([
+        _sin_acentos(limpiar_nombre_calle(calle1)).lower(),
+        _sin_acentos(limpiar_nombre_calle(calle2)).lower(),
+    ])
+
+
+PATRON_CIRCUNVALACION = re.compile(r"circunvalaci[oó]n", re.IGNORECASE)
+
+# Algunas calles cambian de nombre justo en el cruce con Circunvalación --
+# este alias solo se aplica cuando la otra calle del par ES Circunvalación,
+# no afecta a estas calles en ninguna otra esquina.
+ALIAS_JUNTO_A_CIRCUNVALACION = {
+    "pellegrini": "Avenida Che Guevara",
+}
+
+
+def _nombre_para_geocoding(calle, es_par_con_circunvalacion=False):
+    """
+    Avenida de Circunvalación es una vía rápida sin esquinas reales -- Georef
+    nunca la matchea en una intersección. Su colectora interna SÍ es una
+    calle de superficie con cruces reales, y tiene nombre oficial propio:
+    "Juan Pablo II" (Ordenanza 7851/2005). Para geocodificar sustituimos por
+    ese nombre; para mostrar en el mapa seguimos usando "Circunvalación"
+    (esta función solo se usa antes de consultar la API).
+
+    Si la OTRA calle del par es Circunvalación, además revisamos si esta
+    calle tiene un alias conocido (algunas cambian de nombre justo ahí).
+    """
+    if PATRON_CIRCUNVALACION.search(calle or ""):
+        return "Juan Pablo II"
+    if es_par_con_circunvalacion:
+        alias = ALIAS_JUNTO_A_CIRCUNVALACION.get(_sin_acentos(limpiar_nombre_calle(calle)).lower())
+        if alias:
+            return alias
+    return calle
 
 
 def geocodificar(calle1, calle2, cache):
+    """Geocodifica una intersección de dos calles. Devuelve (lat, lon, aproximado)."""
     calle1, calle2 = limpiar_nombre_calle(calle1), limpiar_nombre_calle(calle2)
     if not calle1:
-        return None, None  # sin calle no hay nada que buscar
+        return None, None, False
 
     clave = f"{calle1}|{calle2}"
     if clave in cache:
-        return cache[clave]
+        valor = cache[clave]
+        if len(valor) == 2:
+            valor = valor + [True]
+        return valor[0], valor[1], valor[2]
 
+    correccion = CORRECCIONES_INTERSECCIONES.get(_clave_correccion(calle1, calle2))
+    if correccion:
+        cache[clave] = [correccion[0], correccion[1], False]
+        return correccion[0], correccion[1], False
+
+    calle1_es_circ = bool(PATRON_CIRCUNVALACION.search(calle1))
+    calle2_es_circ = bool(PATRON_CIRCUNVALACION.search(calle2))
+    calle1_geo = _nombre_para_geocoding(calle1, es_par_con_circunvalacion=calle2_es_circ)
+    calle2_geo = _nombre_para_geocoding(calle2, es_par_con_circunvalacion=calle1_es_circ)
+
+    aproximado = False
     lat = lon = None
 
-    # intento 1: la esquina completa, formato recomendado por Georef
-    if calle2:
-        lat, lon = _consultar_georef(f"{calle1} y {calle2}")
+    if calle2_geo:
+        lat, lon = _consultar_georef(f"{calle1_geo} y {calle2_geo}")
         time.sleep(0.3)
 
-    # intento 2 (fallback): solo la primera calle, aproximado
+    if lat is None and calle2_geo:
+        lat1, lon1 = _consultar_georef(calle1_geo)
+        time.sleep(0.3)
+        lat2, lon2 = _consultar_georef(calle2_geo)
+        time.sleep(0.3)
+        if lat1 is not None and lat2 is not None:
+            lat, lon = (lat1 + lat2) / 2, (lon1 + lon2) / 2
+            aproximado = True
+        elif lat1 is not None:
+            lat, lon = lat1, lon1
+            aproximado = True
+
     if lat is None:
-        lat, lon = _consultar_georef(calle1)
+        lat, lon = _consultar_georef(calle1_geo)
+        time.sleep(0.3)
+        aproximado = True
+
+    if lat is not None:
+        cache[clave] = [lat, lon, aproximado]
+
+    return lat, lon, aproximado
+
+
+def geocodificar_altura(calle, altura, cache):
+    """Geocodifica una dirección con altura (ej. "San Juan 1900")."""
+    calle = limpiar_nombre_calle(calle)
+    clave = f"ALTURA|{calle}|{altura}"
+    if clave in cache:
+        valor = cache[clave]
+        return valor[0], valor[1]
+
+    calle_geo = _nombre_para_geocoding(calle)
+    lat, lon = _consultar_georef(f"{calle_geo} {altura}".strip())
+    time.sleep(0.3)
+
+    if lat is None:
+        lat, lon = _consultar_georef(calle_geo)
         time.sleep(0.3)
 
-    # solo cacheamos si encontramos algo -- un fallo no debe quedar
-    # guardado para siempre (podría deberse a un error transitorio,
-    # o arreglarse después con un mejor query)
     if lat is not None:
         cache[clave] = [lat, lon]
+    return lat, lon
 
-    return [lat, lon]
+
+# ---------- filtros / detección de casos especiales ----------
+PATRON_RUTA_KM = re.compile(r"\b(ruta|autopista|autov[ií]a|km|kil[oó]metro)\b", re.IGNORECASE)
+VALORES_CALLE2_INVALIDOS = {"n/a", "na", "no aplica", "desconocido", "s/d", ""}
+
+
+def calle2_es_valida(calle2):
+    calle2 = (calle2 or "").strip()
+    if calle2.lower() in VALORES_CALLE2_INVALIDOS:
+        return False
+    if calle2.isdigit():  # es una altura, no una calle
+        return False
+    return True
 
 
 # ---------- inferencia de tipo y clima (parche hasta que estén en el schema) ----------
@@ -159,7 +290,7 @@ def inferir_tipo(resumen, vehiculos):
 
 
 def inferir_clima(resumen):
-    texto = resumen.lower()
+    texto = (resumen or "").lower()
     if "lluvia" in texto:
         return "Lluvia"
     if "niebla" in texto or "neblina" in texto:
@@ -174,27 +305,97 @@ def convertir(path_csv):
     filas = leer_csv_robusto(path_csv)
     cache = cargar_cache()
     incidentes = []
+    sin_ubicacion_exacta = []  # ruta_km y desconocida: no van al mapa, pero no se pierden
+    vistos = set()  # para no duplicar el mismo siniestro contado por 2 medios
 
     for fila in filas:
         if str(fila.get("es_siniestro_vial", "")).strip().lower() != "true":
+            print(f"  -> se omite (no es siniestro vial): {fila.get('url', '')}")
             continue
 
+        url = fila.get("url", "")
+        resumen = fila.get("resumen_breve") or ""
+        vehiculos = fila.get("vehiculos_involucrados") or ""
+        # si el CSV es viejo y no tiene esta columna, default a "interseccion"
+        tipo_ubicacion = (fila.get("tipo_ubicacion") or "interseccion").strip().lower()
         calle1 = (fila.get("ubicacion_calle1") or "").strip()
-        calle2 = (fila.get("ubicacion_calle2") or "").strip()
 
         if not calle1:
-            print(f"  -> se omite (sin calle registrada): {fila.get('url', '')}")
+            print(f"  -> se omite (sin calle registrada): {url}")
             continue
 
+        # --- ruta/autopista con km, o ubicación que Gemini no pudo precisar ---
+        if tipo_ubicacion in ("ruta_km", "desconocida"):
+            ruta_nombre = (fila.get("ruta_nombre") or calle1).strip()
+            print(f"  -> sin coordenada exacta ({tipo_ubicacion}): {ruta_nombre}")
+            sin_ubicacion_exacta.append({
+                "fecha": fila.get("fecha_siniestro") or "",
+                "hora": fila.get("hora_aprox") or "00:00",
+                "descripcion": ruta_nombre + (f", km {fila.get('kilometro')}" if fila.get("kilometro") else ""),
+                "vehiculos": vehiculos,
+                "heridos": int(float(fila.get("cantidad_heridos") or 0)),
+                "fallecidos": int(float(fila.get("cantidad_fallecidos") or 0)),
+                "link": url,
+            })
+            continue
+
+        # --- calle con altura (ej. "San Juan al 1900") ---
+        if tipo_ubicacion == "altura":
+            altura = (fila.get("altura") or "").strip()
+            clave_dup = (limpiar_nombre_calle(calle1).lower(), altura, fila.get("fecha_siniestro"))
+            if clave_dup in vistos:
+                print(f"  -> se omite (duplicado, ya cargado desde otra fuente): {url}")
+                continue
+            vistos.add(clave_dup)
+
+            print(f"Geocodificando: {calle1} {altura}...")
+            lat, lng = geocodificar_altura(calle1, altura, cache)
+            if lat is None:
+                print(f"  -> se omite del mapa (no se pudo ubicar), pero podés revisarlo a mano")
+                continue
+
+            incidentes.append({
+                "fecha": fila.get("fecha_siniestro") or "",
+                "hora": fila.get("hora_aprox") or "00:00",
+                "calle": f"{calle1} al {altura}".strip(),
+                "lat": lat,
+                "lng": lng,
+                "ubicacion_aproximada": False,
+                "tipo": inferir_tipo(resumen, vehiculos),
+                "vehiculos": vehiculos,
+                "heridos": int(float(fila.get("cantidad_heridos") or 0)),
+                "fallecidos": int(float(fila.get("cantidad_fallecidos") or 0)),
+                "clima": inferir_clima(resumen),
+                "link": url or "#",
+            })
+            continue
+
+        # --- caso normal: intersección de dos calles ---
+        calle2_cruda = (fila.get("ubicacion_calle2") or "").strip()
+
+        tiene_correccion = _clave_correccion(calle1, calle2_cruda) in CORRECCIONES_INTERSECCIONES
+        if not tiene_correccion and (PATRON_RUTA_KM.search(calle1) or PATRON_RUTA_KM.search(calle2_cruda)):
+            print(f"  -> se omite del mapa (es ruta/km, no una esquina de ciudad): {calle1} y {calle2_cruda}")
+            continue
+
+        calle2 = calle2_cruda if calle2_es_valida(calle2_cruda) else ""
+
+        clave_dup = (frozenset([
+            limpiar_nombre_calle(calle1).lower(),
+            limpiar_nombre_calle(calle2).lower(),
+        ]), fila.get("fecha_siniestro"))
+
+        if clave_dup in vistos:
+            print(f"  -> se omite (duplicado, ya cargado desde otra fuente): {url}")
+            continue
+        vistos.add(clave_dup)
+
         print(f"Geocodificando: {calle1} y {calle2}...")
-        lat, lng = geocodificar(calle1, calle2, cache)
+        lat, lng, aproximado = geocodificar(calle1, calle2, cache)
 
         if lat is None:
             print(f"  -> se omite del mapa (no se pudo ubicar), pero podés revisarlo a mano")
             continue
-
-        resumen = fila.get("resumen_breve") or ""
-        vehiculos = fila.get("vehiculos_involucrados") or ""
 
         incidentes.append({
             "fecha": fila.get("fecha_siniestro") or "",
@@ -202,16 +403,22 @@ def convertir(path_csv):
             "calle": f"{calle1} y {calle2}".strip(" y"),
             "lat": lat,
             "lng": lng,
+            "ubicacion_aproximada": aproximado,
             "tipo": inferir_tipo(resumen, vehiculos),
             "vehiculos": vehiculos,
             "heridos": int(float(fila.get("cantidad_heridos") or 0)),
             "fallecidos": int(float(fila.get("cantidad_fallecidos") or 0)),
             "clima": inferir_clima(resumen),
-            "link": fila.get("url") or "#",
+            "link": url or "#",
         })
 
     guardar_cache(cache)
-    return incidentes
+
+    if sin_ubicacion_exacta:
+        print(f"\n{len(sin_ubicacion_exacta)} siniestro(s) sin coordenada exacta (rutas/km) -- "
+              f"quedan afuera del mapa, revisalos a mano si los querés incluir.")
+
+    return incidentes, sin_ubicacion_exacta
 
 
 def inyectar_en_html(incidentes, path_html_entrada, path_html_salida):
@@ -236,9 +443,14 @@ if __name__ == "__main__":
         sys.exit(1)
 
     path_csv, path_html = sys.argv[1], sys.argv[2]
-    incidentes = convertir(path_csv)
+    incidentes, sin_ubicacion_exacta = convertir(path_csv)
     print(f"\n{len(incidentes)} siniestros geocodificados y listos.")
 
-    salida = "observatorio_con_datos.html"
+    salida = "observatorio_2.html"
     inyectar_en_html(incidentes, path_html, salida)
     print(f"Listo: {salida}")
+
+    if sin_ubicacion_exacta:
+        with open("sin_ubicacion_exacta.json", "w", encoding="utf-8") as f:
+            json.dump(sin_ubicacion_exacta, f, ensure_ascii=False, indent=2)
+        print(f"Guardé {len(sin_ubicacion_exacta)} siniestro(s) sin coordenada en sin_ubicacion_exacta.json")
