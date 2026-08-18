@@ -34,13 +34,6 @@
   }
   .wrap{max-width:1320px; margin:0 auto; padding:28px 24px 60px;}
 
-  /* dashed lane divider */
-  .lane{
-    height:0;
-    border-top:3px dashed var(--asphalt-3);
-    margin:26px 0;
-  }
-
   header{display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:16px; margin-bottom:6px;}
   .eyebrow{
     font-family:'JetBrains Mono', monospace;
@@ -65,8 +58,21 @@
   }
   .status b{color:var(--teal); font-weight:600;}
 
+  /* pestañas */
+  .tabs{display:flex; gap:4px; margin-top:22px; border-bottom:1px solid var(--border);}
+  .tab-btn{
+    background:transparent; border:none; color:var(--line-dim); cursor:pointer;
+    font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:13px;
+    text-transform:uppercase; letter-spacing:.04em;
+    padding:10px 18px; border-bottom:2px solid transparent;
+  }
+  .tab-btn:hover{color:var(--line);}
+  .tab-btn.active{color:var(--teal); border-bottom-color:var(--teal);}
+  .tab-panel{display:none; margin-top:20px;}
+  .tab-panel.active{display:block;}
+
   /* KPI row */
-  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-top:22px;}
+  .kpis{display:grid; grid-template-columns:repeat(4,1fr); gap:14px;}
   .kpi{
     background:var(--asphalt-2); border:1px solid var(--border); border-radius:2px;
     padding:14px 16px; position:relative; overflow:hidden; display:flex; align-items:center; gap:14px;
@@ -122,8 +128,6 @@
     font-family:'JetBrains Mono', monospace; font-size:13px;
   }
 
-  /* main grid */
-  main{display:grid; grid-template-columns:1.55fr 1fr; gap:16px; margin-top:26px;}
   .panel{
     background:var(--asphalt-2); border:1px solid var(--border); border-radius:2px;
     padding:16px 18px 18px;
@@ -139,10 +143,11 @@
     text-transform:none;
   }
 
-  #map{height:430px; border-radius:2px; position:relative;}
-  .map-wrap{position:relative;}
+  #map{height:560px; border-radius:2px; position:relative;}
+  .map-wrap{position:relative; margin-top:16px;}
 
-  .charts-col{display:flex; flex-direction:column; gap:16px;}
+  .charts-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width: 900px){.charts-grid{grid-template-columns:1fr;}}
 
   /* feed table */
   table{width:100%; border-collapse:collapse; font-size:13px;}
@@ -172,7 +177,6 @@
   }
 
   @media (max-width: 900px){
-    main{grid-template-columns:1fr;}
     .kpis{grid-template-columns:repeat(2,1fr);}
     header{flex-direction:column; align-items:flex-start;}
     .status{text-align:left;}
@@ -196,56 +200,80 @@
     </div>
   </header>
 
-  <div class="kpis" id="kpis"></div>
-  <div class="kpis-mini" id="kpisMini"></div>
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="mapa">🗺️ Mapa</button>
+    <button class="tab-btn" data-tab="graficos">📊 Gráficos</button>
+    <button class="tab-btn" data-tab="datos">📋 Datos</button>
+  </nav>
 
-  <div class="filters" id="filters">
-    <div class="filter-group">
-      <label>Tipo de siniestro</label>
-      <select id="filtroTipo"><option value="todos">Todos</option></select>
-    </div>
-    <div class="filter-group">
-      <label>Gravedad</label>
-      <select id="filtroGravedad">
-        <option value="todos">Todas</option>
-        <option value="fallecidos">Con fallecidos</option>
-        <option value="heridos">Con heridos (sin fallecidos)</option>
-        <option value="sin">Solo daños materiales</option>
-      </select>
-    </div>
-    <button id="filtroReset">↺ Limpiar filtros</button>
-    <span class="filter-count" id="filtroCount"></span>
-  </div>
+  <section class="tab-panel active" id="tab-mapa">
+    <div class="kpis" id="kpis"></div>
+    <div class="kpis-mini" id="kpisMini"></div>
 
-  <main>
+    <div class="filters" id="filters">
+      <div class="filter-group">
+        <label>Tipo de siniestro</label>
+        <select id="filtroTipo"><option value="todos">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Gravedad</label>
+        <select id="filtroGravedad">
+          <option value="todos">Todas</option>
+          <option value="fallecidos">Con fallecidos</option>
+          <option value="heridos">Con heridos (sin fallecidos)</option>
+          <option value="sin">Solo daños materiales</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Tipo de vehículo</label>
+        <select id="filtroVehiculo"><option value="todos">Todos</option></select>
+      </div>
+      <div class="filter-group">
+        <label>Clima</label>
+        <select id="filtroClima"><option value="todos">Todos</option></select>
+      </div>
+      <button id="filtroReset">↺ Limpiar filtros</button>
+      <span class="filter-count" id="filtroCount"></span>
+    </div>
+
     <div class="panel map-wrap">
       <h2>Mapa de siniestros <span class="tag">Histórico</span></h2>
       <div id="map"></div>
     </div>
+  </section>
 
-    <div class="charts-col">
+  <section class="tab-panel" id="tab-graficos">
+    <div class="charts-grid">
       <div class="panel">
         <h2>Por tipo de siniestro</h2>
-        <div id="chart-tipo" style="height:190px;"></div>
+        <div id="chart-tipo" style="height:260px;"></div>
       </div>
       <div class="panel">
         <h2>Por franja horaria</h2>
-        <div id="chart-hora" style="height:190px;"></div>
+        <div id="chart-hora" style="height:260px;"></div>
+      </div>
+      <div class="panel">
+        <h2>Por gravedad</h2>
+        <div id="chart-gravedad" style="height:260px;"></div>
+      </div>
+      <div class="panel">
+        <h2>Por clima</h2>
+        <div id="chart-clima" style="height:260px;"></div>
       </div>
     </div>
-  </main>
+  </section>
 
-  <div class="lane"></div>
-
-  <div class="panel">
-    <h2>Últimos siniestros registrados</h2>
-    <table>
-      <thead>
-        <tr><th></th><th>Fecha / hora</th><th>Ubicación</th><th>Tipo</th><th>Vehículos</th><th>🤕 Heridos</th><th>💀 Fallecidos</th><th>Clima</th><th>Fuente</th></tr>
-      </thead>
-      <tbody id="feed"></tbody>
-    </table>
-  </div>
+  <section class="tab-panel" id="tab-datos">
+    <div class="panel">
+      <h2>Últimos siniestros registrados</h2>
+      <table>
+        <thead>
+          <tr><th></th><th>Fecha / hora</th><th>Ubicación</th><th>Tipo</th><th>Vehículos</th><th>🤕 Heridos</th><th>💀 Fallecidos</th><th>Clima</th><th>Fuente</th></tr>
+        </thead>
+        <tbody id="feed"></tbody>
+      </table>
+    </div>
+  </section>
 
   <footer>
     <span>OBSERVATORIO · Rosario, AR — MVP CoderCup</span>
@@ -657,15 +685,21 @@ const incidentes = [
 document.getElementById('clock').textContent =
   new Date().toLocaleString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
 
-/* ---------- helpers de emoji ---------- */
+/* ---------- helpers de emoji / categorías ---------- */
+function categoriaVehiculo(v){
+  v = (v || '').toLowerCase();
+  if(v.includes('moto')) return 'Moto';
+  if(v.includes('bici')) return 'Bicicleta';
+  if(v.includes('colectivo')) return 'Colectivo';
+  if(v.includes('cami')) return 'Camión';
+  if(v.includes('peat')) return 'Peatón';
+  return 'Auto';
+}
+const EMOJI_POR_CATEGORIA_VEHICULO = {
+  'Moto':'🏍️', 'Bicicleta':'🚲', 'Colectivo':'🚌', 'Camión':'🚚', 'Peatón':'🚶', 'Auto':'🚗',
+};
 function vehiculoEmoji(v){
-  v = v.toLowerCase();
-  if(v.includes('moto')) return '🏍️';
-  if(v.includes('bici')) return '🚲';
-  if(v.includes('colectivo')) return '🚌';
-  if(v.includes('cami')) return '🚚';
-  if(v.includes('peat')) return '🚶';
-  return '🚗';
+  return EMOJI_POR_CATEGORIA_VEHICULO[categoriaVehiculo(v)];
 }
 function climaEmoji(c){
   c = c.toLowerCase();
@@ -692,14 +726,17 @@ const map = L.map('map', {zoomControl:true, attributionControl:false}).setView([
 L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {maxZoom:19}).addTo(map);
 let markers = [];
 
-/* ---------- poblar el filtro de tipo ---------- */
-const tiposUnicos = [...new Set(incidentes.map(i=>i.tipo))].sort();
-const selectTipo = document.getElementById('filtroTipo');
-tiposUnicos.forEach(t=>{
-  const opt = document.createElement('option');
-  opt.value = t; opt.textContent = t;
-  selectTipo.appendChild(opt);
-});
+/* ---------- poblar los filtros con los valores presentes en los datos ---------- */
+function poblarSelect(select, valores){
+  valores.forEach(v=>{
+    const opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    select.appendChild(opt);
+  });
+}
+poblarSelect(document.getElementById('filtroTipo'), [...new Set(incidentes.map(i=>i.tipo))].sort());
+poblarSelect(document.getElementById('filtroVehiculo'), [...new Set(incidentes.map(i=>categoriaVehiculo(i.vehiculos)))].sort());
+poblarSelect(document.getElementById('filtroClima'), [...new Set(incidentes.map(i=>i.clima))].sort());
 
 /* ---------- render principal: recibe el subconjunto ya filtrado ---------- */
 function render(data){
@@ -808,6 +845,44 @@ function render(data){
     bargap:0.15,
   }, {displayModeBar:false, responsive:true});
 
+  // ----- chart: por gravedad (torta) -----
+  const gravedadData = [
+    {label:'Con fallecidos', valor: data.filter(i=>i.fallecidos>0).length, color:'#e0555f'},
+    {label:'Con heridos', valor: data.filter(i=>i.heridos>0 && i.fallecidos===0).length, color:'#f2a93b'},
+    {label:'Solo daños materiales', valor: data.filter(i=>i.heridos===0 && i.fallecidos===0).length, color:'#4fb6a8'},
+  ].filter(g=>g.valor>0);
+  Plotly.newPlot('chart-gravedad', [{
+    labels: gravedadData.map(g=>g.label),
+    values: gravedadData.map(g=>g.valor),
+    type:'pie',
+    hole:0.45,
+    marker:{colors: gravedadData.map(g=>g.color)},
+    textfont:{color:'#12141a', size:11},
+  }], {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
+    margin:{l:10, r:10, t:6, b:10}, showlegend:true,
+    legend:{orientation:'h', y:-0.1},
+  }, {displayModeBar:false, responsive:true});
+
+  // ----- chart: por clima (torta) -----
+  const climas = {};
+  data.forEach(i => climas[i.clima] = (climas[i.clima]||0)+1);
+  const climaKeys = Object.keys(climas);
+  Plotly.newPlot('chart-clima', [{
+    labels: climaKeys,
+    values: climaKeys.map(k=>climas[k]),
+    type:'pie',
+    hole:0.45,
+    marker:{colors:['#4fb6a8','#f2a93b','#e0555f','#6c8ee0','#9a9da6','#c9872a']},
+    textfont:{color:'#12141a', size:11},
+  }], {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
+    margin:{l:10, r:10, t:6, b:10}, showlegend:true,
+    legend:{orientation:'h', y:-0.1},
+  }, {displayModeBar:false, responsive:true});
+
   // ----- tabla feed -----
   const feed = document.getElementById('feed');
   if(!data.length){
@@ -835,22 +910,53 @@ function render(data){
 function aplicarFiltros(){
   const tipo = document.getElementById('filtroTipo').value;
   const gravedad = document.getElementById('filtroGravedad').value;
+  const vehiculo = document.getElementById('filtroVehiculo').value;
+  const clima = document.getElementById('filtroClima').value;
 
   let data = incidentes;
   if(tipo !== 'todos') data = data.filter(i => i.tipo === tipo);
   if(gravedad === 'fallecidos') data = data.filter(i => i.fallecidos > 0);
   else if(gravedad === 'heridos') data = data.filter(i => i.heridos > 0 && i.fallecidos === 0);
   else if(gravedad === 'sin') data = data.filter(i => i.heridos === 0 && i.fallecidos === 0);
+  if(vehiculo !== 'todos') data = data.filter(i => categoriaVehiculo(i.vehiculos) === vehiculo);
+  if(clima !== 'todos') data = data.filter(i => i.clima === clima);
 
   render(data);
 }
 
-document.getElementById('filtroTipo').addEventListener('change', aplicarFiltros);
-document.getElementById('filtroGravedad').addEventListener('change', aplicarFiltros);
+['filtroTipo','filtroGravedad','filtroVehiculo','filtroClima'].forEach(id=>{
+  document.getElementById(id).addEventListener('change', aplicarFiltros);
+});
 document.getElementById('filtroReset').addEventListener('click', ()=>{
-  document.getElementById('filtroTipo').value = 'todos';
-  document.getElementById('filtroGravedad').value = 'todos';
+  ['filtroTipo','filtroGravedad','filtroVehiculo','filtroClima'].forEach(id=>{
+    document.getElementById(id).value = 'todos';
+  });
   aplicarFiltros();
+});
+
+/* ---------- pestañas ---------- */
+const tabPanels = {
+  mapa: document.getElementById('tab-mapa'),
+  graficos: document.getElementById('tab-graficos'),
+  datos: document.getElementById('tab-datos'),
+};
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    Object.values(tabPanels).forEach(p=>p.classList.remove('active'));
+    const tab = btn.dataset.tab;
+    tabPanels[tab].classList.add('active');
+
+    // Leaflet/Plotly calculan su tamaño al crearse; si el panel estaba oculto
+    // (display:none) en ese momento, quedan con ancho 0. Al mostrarse hay
+    // que forzarlos a recalcular tamaño.
+    if(tab === 'mapa'){
+      setTimeout(()=> map.invalidateSize(), 0);
+    } else if(tab === 'graficos'){
+      ['chart-tipo','chart-hora','chart-gravedad','chart-clima'].forEach(id=> Plotly.Plots.resize(id));
+    }
+  });
 });
 
 /* ---------- primer render ---------- */
