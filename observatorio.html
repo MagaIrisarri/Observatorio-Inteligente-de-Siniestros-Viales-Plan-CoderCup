@@ -181,6 +181,34 @@
     header{flex-direction:column; align-items:flex-start;}
     .status{text-align:left;}
   }
+
+  .table-scroll{overflow-x:auto; -webkit-overflow-scrolling:touch;}
+  .table-scroll table{min-width:720px;}
+
+  @media (max-width: 600px){
+    .wrap{padding:18px 14px 40px;}
+    h1{font-size:23px;}
+    .subtitle{font-size:13px;}
+    .status{font-size:11px;}
+
+    .tabs{overflow-x:auto; -webkit-overflow-scrolling:touch; flex-wrap:nowrap;}
+    .tab-btn{padding:10px 12px; font-size:12px; white-space:nowrap;}
+
+    .kpis{grid-template-columns:repeat(2,1fr); gap:10px;}
+    .kpi{padding:12px;}
+    .kpi .num{font-size:20px;}
+    .kpis-mini{grid-template-columns:1fr; gap:10px;}
+
+    .filters{flex-direction:column; align-items:stretch; padding:12px;}
+    .filter-group select{min-width:0; width:100%;}
+    #filtroReset{width:100%;}
+    .filter-count{margin-left:0;}
+
+    #map{height:380px;}
+
+    table{font-size:12px;}
+    thead th, tbody td{padding:8px 6px;}
+  }
 </style>
 </head>
 <body>
@@ -196,7 +224,6 @@
       ÚLTIMA ACTUALIZACIÓN<br>
       <b id="clock">—</b><br>
       Fuente: 2 medios · Histórico completo<br>
-      <span style="color:var(--caution)">✨ Versión con íconos</span>
     </div>
   </header>
 
@@ -266,12 +293,14 @@
   <section class="tab-panel" id="tab-datos">
     <div class="panel">
       <h2>Últimos siniestros registrados</h2>
-      <table>
-        <thead>
-          <tr><th></th><th>Fecha / hora</th><th>Ubicación</th><th>Tipo</th><th>Vehículos</th><th>🤕 Heridos</th><th>💀 Fallecidos</th><th>Clima</th><th>Fuente</th></tr>
-        </thead>
-        <tbody id="feed"></tbody>
-      </table>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr><th></th><th>Fecha / hora</th><th>Ubicación</th><th>Tipo</th><th>Vehículos</th><th>🤕 Heridos</th><th>💀 Fallecidos</th><th>Clima</th><th>Fuente</th></tr>
+          </thead>
+          <tbody id="feed"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 

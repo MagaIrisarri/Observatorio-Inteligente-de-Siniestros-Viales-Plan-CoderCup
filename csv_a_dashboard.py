@@ -1,13 +1,12 @@
 """
-Convierte siniestros_rosario_con_clima.csv al array `incidentes` que espera el
+Convierte siniestros_rosario.csv al array `incidentes` que espera el
 dashboard HTML, geocodificando con la API Georef (datos.gob.ar).
 
 Uso:
-    python csv_a_dashboard.py siniestros_rosario_con_clima.csv observatorio.html
+    python csv_a_dashboard.py siniestros_rosario.csv observatorio.html
 
-Genera observatorio_con_datos.html con el array ya insertado, y
-sin_ubicacion_exacta.json con los siniestros de ruta/km que no se
-pueden ubicar en un mapa de calles.
+Genera index.html con el array ya insertado, y sin_ubicacion_exacta.json
+con los siniestros de ruta/km que no se pueden ubicar en un mapa de calles.
 """
 import csv
 import io
@@ -452,20 +451,22 @@ def inyectar_en_html(incidentes, path_html_entrada, path_html_salida):
         f.write(html_nuevo)
 
 
-if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print("Uso: python csv_a_dashboard.py siniestros_rosario_con_clima.csv observatorio.html")
-        sys.exit(1)
-
-    path_csv, path_html = sys.argv[1], sys.argv[2]
+def generar_dashboard(path_csv, path_html_entrada, path_html_salida="index.html"):
     incidentes, sin_ubicacion_exacta = convertir(path_csv)
     print(f"\n{len(incidentes)} siniestros geocodificados y listos.")
 
-    salida = "observatorio_2.html"
-    inyectar_en_html(incidentes, path_html, salida)
-    print(f"Listo: {salida}")
+    inyectar_en_html(incidentes, path_html_entrada, path_html_salida)
+    print(f"Listo: {path_html_salida}")
 
     if sin_ubicacion_exacta:
         with open("sin_ubicacion_exacta.json", "w", encoding="utf-8") as f:
             json.dump(sin_ubicacion_exacta, f, ensure_ascii=False, indent=2)
         print(f"Guardé {len(sin_ubicacion_exacta)} siniestro(s) sin coordenada en sin_ubicacion_exacta.json")
+
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Uso: python csv_a_dashboard.py siniestros_rosario.csv observatorio.html")
+        sys.exit(1)
+
+    generar_dashboard(sys.argv[1], sys.argv[2])

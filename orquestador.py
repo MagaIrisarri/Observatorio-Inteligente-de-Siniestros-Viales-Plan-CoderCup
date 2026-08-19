@@ -8,6 +8,11 @@ from scraper import (
     ANIO_MINIMO,
 )
 from procesador import estructurar_noticia_con_ia, guardar_resultado, es_duplicado
+import agregar_clima
+from csv_a_dashboard import generar_dashboard
+
+CSV_SINIESTROS = "siniestros_rosario.csv"
+HTML_TEMPLATE = "observatorio.html"
 
 # Antes solo mirábamos la portada de cada sitio, que apenas muestra un puñado
 # de noticias "destacadas" de cualquier tema, no un listado completo. Las
@@ -32,6 +37,8 @@ def main():
     print("Cargando URLs ya procesadas...")
     urls_procesadas = cargar_urls_procesadas()
     print(f"  {len(urls_procesadas)} URLs ya procesadas.")
+
+    total_siniestros_guardados = 0
 
     for url_seccion in URLS_SECCION:
         print(f"\nBuscando noticias nuevas en {url_seccion}...")
@@ -105,7 +112,16 @@ def main():
                 guardar_url_procesada(url)
                 urls_procesadas.add(url)
 
+        total_siniestros_guardados += siniestros_guardados
         print(f"\nListo con {url_seccion}: {siniestros_guardados} siniestros nuevos guardados.")
+
+    if total_siniestros_guardados == 0:
+        print("\nNo se guardó ningún siniestro nuevo, no hace falta actualizar la página.")
+        return
+
+    print(f"\n{total_siniestros_guardados} siniestro(s) nuevo(s) en total. Actualizando clima y la página...")
+    agregar_clima.main(CSV_SINIESTROS)
+    generar_dashboard(CSV_SINIESTROS, HTML_TEMPLATE)
 
 
 if __name__ == "__main__":

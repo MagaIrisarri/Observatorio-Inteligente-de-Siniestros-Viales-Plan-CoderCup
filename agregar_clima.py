@@ -5,7 +5,7 @@ cada siniestro y la API gratuita de Open-Meteo (sin API key).
 Uso:
     python agregar_clima.py siniestros_rosario.csv
 
-Genera siniestros_rosario_con_clima.csv con dos columnas nuevas:
+Agrega (o actualiza, si ya existían) dos columnas al mismo archivo:
     - clima_real: categoría derivada del código WMO (Despejado, Nublado,
       Niebla, Lluvia, Tormenta, etc.)
     - lluvia_mm: milímetros de lluvia ese día en Rosario (0.0 si no llovió)
@@ -131,15 +131,18 @@ def main(path_csv):
         fila["clima_real"] = categoria
         fila["lluvia_mm"] = lluvia_mm
 
-    nuevos_fieldnames = list(fieldnames) + ["clima_real", "lluvia_mm"]
-    salida = path_csv.replace(".csv", "_con_clima.csv")
-    with open(salida, "w", encoding="utf-8-sig", newline="") as f:
+    nuevos_fieldnames = list(fieldnames)
+    for campo in ("clima_real", "lluvia_mm"):
+        if campo not in nuevos_fieldnames:
+            nuevos_fieldnames.append(campo)
+
+    with open(path_csv, "w", encoding="utf-8-sig", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=nuevos_fieldnames)
         writer.writeheader()
         writer.writerows(filas)
 
     con_lluvia = sum(1 for f in filas if isinstance(f["lluvia_mm"], (int, float)) and f["lluvia_mm"] and f["lluvia_mm"] > 0)
-    print(f"\nListo: {salida}")
+    print(f"\nListo: {path_csv} actualizado con clima.")
     print(f"{len(filas)} filas procesadas, {con_lluvia} con lluvia registrada ese día.")
 
 
