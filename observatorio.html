@@ -171,6 +171,39 @@
   a.src{color:var(--teal); text-decoration:none; font-size:12px;}
   a.src:hover{text-decoration:underline;}
 
+  .insight-card{
+    display:flex; align-items:center; gap:16px; padding:6px 4px;
+  }
+  .insight-card .insight-icon{
+    font-size:28px; flex-shrink:0; width:48px; height:48px; border-radius:50%;
+    background:rgba(224,85,95,0.12); border:1px solid var(--danger);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .insight-card .insight-text{font-size:13.5px; line-height:1.5; color:var(--line-dim);}
+  .insight-card .insight-text b{color:var(--line); font-weight:600;}
+  .variacion-box{
+    display:flex; align-items:center; gap:8px; margin-top:10px;
+    font-family:'JetBrains Mono', monospace; font-size:13px; color:var(--line-dim);
+  }
+  .variacion-box .variacion-pill{
+    padding:3px 10px; border-radius:999px; font-weight:600;
+  }
+  .variacion-box .variacion-pill.up{background:rgba(224,85,95,0.14); color:var(--danger);}
+  .variacion-box .variacion-pill.down{background:rgba(79,182,168,0.14); color:var(--teal);}
+  .variacion-box .variacion-pill.flat{background:rgba(154,157,166,0.14); color:var(--line-dim);}
+  #btnDescargar{
+    background:transparent; border:1px solid var(--asphalt-3); color:var(--line-dim);
+    border-radius:2px; padding:6px 12px; font-family:'JetBrains Mono', monospace;
+    font-size:11px; text-transform:none; letter-spacing:normal; cursor:pointer;
+  }
+  #btnDescargar:hover{border-color:var(--teal); color:var(--teal);}
+  .chart-legend{
+    display:flex; flex-wrap:wrap; gap:14px; margin-top:8px;
+    font-family:'JetBrains Mono', monospace; font-size:10px; color:var(--line-dim);
+  }
+  .chart-legend span{display:flex; align-items:center; gap:5px;}
+  .chart-legend i{width:9px; height:9px; border-radius:2px; display:inline-block;}
+
   footer{
     margin-top:30px; font-family:'JetBrains Mono', monospace; font-size:11px;
     color:var(--line-dim); display:flex; justify-content:space-between; flex-wrap:wrap; gap:10px;
@@ -224,6 +257,7 @@
       ÚLTIMA ACTUALIZACIÓN<br>
       <b id="clock">—</b><br>
       Fuente: 2 medios · Histórico completo<br>
+      <span style="color:var(--caution)">✨ Versión con íconos</span>
     </div>
   </header>
 
@@ -263,6 +297,10 @@
       <span class="filter-count" id="filtroCount"></span>
     </div>
 
+    <div class="panel" id="panel-insight-corredor" style="margin-top:16px;">
+      <div id="insightCorredor"></div>
+    </div>
+
     <div class="panel map-wrap">
       <h2>Mapa de siniestros <span class="tag">Histórico</span></h2>
       <div id="map"></div>
@@ -270,14 +308,29 @@
   </section>
 
   <section class="tab-panel" id="tab-graficos">
+    <div class="panel" style="margin-bottom:16px;">
+      <h2>Evolución mensual <span class="tag">Tendencia</span></h2>
+      <div id="chart-tendencia" style="height:260px;"></div>
+      <div id="variacionMensual" class="variacion-box"></div>
+    </div>
     <div class="charts-grid">
       <div class="panel">
-        <h2>Por tipo de siniestro</h2>
+        <h2>Por tipo de siniestro <span class="tag">según gravedad</span></h2>
         <div id="chart-tipo" style="height:260px;"></div>
+        <div class="chart-legend" id="legend-tipo"></div>
+      </div>
+      <div class="panel">
+        <h2>Por vehículo <span class="tag">según gravedad</span></h2>
+        <div id="chart-vehiculo" style="height:260px;"></div>
+        <div class="chart-legend" id="legend-vehiculo"></div>
       </div>
       <div class="panel">
         <h2>Por franja horaria</h2>
         <div id="chart-hora" style="height:260px;"></div>
+      </div>
+      <div class="panel">
+        <h2>Por día de la semana</h2>
+        <div id="chart-diasemana" style="height:260px;"></div>
       </div>
       <div class="panel">
         <h2>Por gravedad</h2>
@@ -292,7 +345,9 @@
 
   <section class="tab-panel" id="tab-datos">
     <div class="panel">
-      <h2>Últimos siniestros registrados</h2>
+      <h2>Últimos siniestros registrados
+        <button id="btnDescargar">⬇️ Descargar CSV</button>
+      </h2>
       <div class="table-scroll">
         <table>
           <thead>
@@ -318,21 +373,396 @@
    vehiculos, heridos, fallecidos, clima, link
    ========================================================= */
 const incidentes = [
-  {fecha:"2026-08-14", hora:"08:12", calle:"Av. Pellegrini y Bv. Oroño", lat:-32.9455, lng:-60.6470, tipo:"Choque", vehiculos:"Auto / Moto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
-  {fecha:"2026-08-14", hora:"19:45", calle:"Av. Circunvalación 25 de Mayo y Ovidio Lagos", lat:-32.9280, lng:-60.6825, tipo:"Atropello", vehiculos:"Camioneta", heridos:1, fallecidos:1, clima:"Lluvia", link:"#"},
-  {fecha:"2026-08-13", hora:"14:20", calle:"San Martín y Mitre", lat:-32.9490, lng:-60.6390, tipo:"Colisión múltiple", vehiculos:"3 autos", heridos:2, fallecidos:0, clima:"Nublado", link:"#"},
-  {fecha:"2026-08-13", hora:"07:05", calle:"Av. Francia y Wilde", lat:-32.9525, lng:-60.6720, tipo:"Vuelco", vehiculos:"Auto", heridos:0, fallecidos:0, clima:"Despejado", link:"#"},
-  {fecha:"2026-08-12", hora:"22:30", calle:"Av. Godoy y Rueda", lat:-32.9605, lng:-60.6555, tipo:"Motociclista caído", vehiculos:"Moto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
-  {fecha:"2026-08-12", hora:"12:50", calle:"Bv. Oroño y Corrientes", lat:-32.9460, lng:-60.6395, tipo:"Choque", vehiculos:"Auto / Bicicleta", heridos:1, fallecidos:0, clima:"Ventoso", link:"#"},
-  {fecha:"2026-08-11", hora:"18:10", calle:"Av. Provincias Unidas y Uriburu", lat:-32.9210, lng:-60.6680, tipo:"Atropello", vehiculos:"Colectivo", heridos:2, fallecidos:0, clima:"Lluvia", link:"#"},
-  {fecha:"2026-08-11", hora:"06:40", calle:"Av. Alberdi y Ayacucho", lat:-32.9340, lng:-60.6280, tipo:"Choque", vehiculos:"2 autos", heridos:0, fallecidos:0, clima:"Neblina", link:"#"},
-  {fecha:"2026-08-10", hora:"23:55", calle:"Av. Circunvalación y San Lorenzo", lat:-32.9835, lng:-60.6710, tipo:"Vuelco", vehiculos:"Camioneta", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
-  {fecha:"2026-08-10", hora:"09:15", calle:"Mendoza y Balcarce", lat:-32.9455, lng:-60.6355, tipo:"Motociclista caído", vehiculos:"Moto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
-  {fecha:"2026-08-09", hora:"17:35", calle:"Echesortu, Av. Godoy y Biedma", lat:-32.9540, lng:-60.6610, tipo:"Choque", vehiculos:"Auto / Moto", heridos:1, fallecidos:0, clima:"Nublado", link:"#"},
-  {fecha:"2026-08-08", hora:"20:00", calle:"Av. Pellegrini y Moreno", lat:-32.9450, lng:-60.6440, tipo:"Atropello", vehiculos:"Auto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
-  {fecha:"2026-08-07", hora:"13:22", calle:"Sarmiento y Necochea", lat:-32.9500, lng:-60.6465, tipo:"Colisión múltiple", vehiculos:"2 autos / moto", heridos:3, fallecidos:0, clima:"Ventoso", link:"#"},
-  {fecha:"2026-08-06", hora:"05:50", calle:"Av. de la Travesía y Ruta 34", lat:-32.9150, lng:-60.6950, tipo:"Vuelco", vehiculos:"Camión", heridos:0, fallecidos:1, clima:"Neblina", link:"#"},
-  {fecha:"2026-08-05", hora:"16:48", calle:"Bv. Oroño y Av. Pellegrini", lat:-32.9458, lng:-60.6462, tipo:"Motociclista caído", vehiculos:"Moto", heridos:1, fallecidos:0, clima:"Despejado", link:"#"},
+  {
+    "fecha": "2026-08-10",
+    "hora": "21:30",
+    "calle": "Mendoza y Servando Bayo",
+    "lat": -32.9432293772723,
+    "lng": -60.6858763666408,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Chevrolet Aveo",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.rosario3.com/policiales/un-automovilista-se-descompenso-perdio-el-control-y-choco-contra-el-frente-de-un-local-de-echesortu-20260811-0011.html"
+  },
+  {
+    "fecha": "2026-08-10",
+    "hora": "Desconocido",
+    "calle": "Avenida Presidente Perón y Lavalle",
+    "lat": -32.9574429910802,
+    "lng": -60.6823578345535,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Chevrolet Aveo, Ford EcoSport, Volkswagen Suran",
+    "heridos": 1,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.rosario3.com/informaciongeneral/fuerte-triple-choque-en-zona-oeste-dejo-heridos-y-genero-cortes-en-avenida-peron-20260811-0031.html"
+  },
+  {
+    "fecha": "2026-08-14",
+    "hora": "21:05",
+    "calle": "Avenida Circunvalación y Avenida Pellegrini",
+    "lat": -32.948844,
+    "lng": -60.721929,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Motocicleta Motomel S2 150 cc, Camión con acoplado",
+    "heridos": 2,
+    "fallecidos": 0,
+    "clima": "Llovizna",
+    "lluvia_mm": 2.6,
+    "link": "https://www.rosario3.com/policiales/fuerte-choque-en-circunvalacion-dos-hombres-heridos-tras-caer-con-su-moto-debajo-de-un-acoplado-20260815-0003.html"
+  },
+  {
+    "fecha": "2026-08-10",
+    "hora": "06:00",
+    "calle": "San Juan al 1900",
+    "lat": -32.9481675237892,
+    "lng": -60.6501698247922,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "automóvil",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.rosario3.com/informaciongeneral/se-distrajo-y-choco-contra-un-arbol-y-el-vallado-de-una-escuela-del-centro-de-rosario-20260810-0011.html"
+  },
+  {
+    "fecha": "2026-07-24",
+    "hora": "12:00",
+    "calle": "Zeballos y Alem",
+    "lat": -32.9569332121707,
+    "lng": -60.6305176373993,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Taxi, Citroën",
+    "heridos": 1,
+    "fallecidos": 0,
+    "clima": "Llovizna",
+    "lluvia_mm": 0.4,
+    "link": "https://www.rosario3.com/informaciongeneral/taxista-perdio-el-control-y-choco-contra-el-frente-de-un-local-gastronomico-en-el-que-habia-un-cliente-pense-que-nos-iba-a-matar-20260724-0034.html"
+  },
+  {
+    "fecha": "2026-07-31",
+    "hora": "01:55",
+    "calle": "San Juan al 3940",
+    "lat": -32.943201481912666,
+    "lng": -60.67792191015529,
+    "ubicacion_aproximada": false,
+    "tipo": "Vuelco",
+    "vehiculos": "Citroën C3",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Lluvia",
+    "lluvia_mm": 9.4,
+    "link": "https://www.rosario3.com/informaciongeneral/mordio-el-cordon-con-su-auto-y-volco-en-echesortu-20260731-0008.html"
+  },
+  {
+    "fecha": "2026-07-27",
+    "hora": "05:45",
+    "calle": "Ruta 34 y Circunvalacion",
+    "lat": -32.893655,
+    "lng": -60.719316,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Peugeot, moto Bajaj Rouser 200",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.rosario3.com/informaciongeneral/fuerte-choque-entre-un-auto-y-un-moto-en-la-ruta-34-y-circunvalacion-de-rosario-20260727-0012.html"
+  },
+  {
+    "fecha": "2026-07-27",
+    "hora": "12:00",
+    "calle": "Paraguay y Gálvez",
+    "lat": -32.9677422992466,
+    "lng": -60.6493505127743,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Chevrolet, Peugeot, Automóvil estacionado",
+    "heridos": 2,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.rosario3.com/informaciongeneral/triple-choque-en-rosario-y-desvios-de-transito-hay-doble-cartel-de-pare-pero-no-frena-nadie-20260727-0054.html"
+  },
+  {
+    "fecha": "2026-08-06",
+    "hora": "Desconocido",
+    "calle": "Barra y 27 de Febrero",
+    "lat": -32.9591867079038,
+    "lng": -60.7060613187855,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "automovil, motocicleta",
+    "heridos": 1,
+    "fallecidos": 0,
+    "clima": "Lluvia intensa",
+    "lluvia_mm": 43.3,
+    "link": "https://www.rosario3.com/informaciongeneral/video-asi-fue-el-choque-del-automovilista-que-embistio-una-moto-y-huyo-20260806-0041.html"
+  },
+  {
+    "fecha": "2026-08-14",
+    "hora": "22:30",
+    "calle": "Avenida Rivarola y Fader",
+    "lat": -32.9661233476831,
+    "lng": -60.7225002671669,
+    "ubicacion_aproximada": false,
+    "tipo": "Colisión múltiple",
+    "vehiculos": "Colectivo Linea 121, Peugeot Partner Patagónica, Peugeot 308, Peugeot 408",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Llovizna",
+    "lluvia_mm": 2.6,
+    "link": "https://www.rosario3.com/informaciongeneral/choque-en-barrio-godoy-un-colectivo-colisiono-contra-tres-autos-estacionados-20260815-0004.html"
+  },
+  {
+    "fecha": "2026-07-07",
+    "hora": "07:00",
+    "calle": "Avenida Eva Perón y Colombia",
+    "lat": -32.9323929885314,
+    "lng": -60.7165324079194,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Vehículo de gran porte",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/insolito-corte-transito-rosario-un-semaforo-se-partio-y-cayo-plena-calle-n10268399.html"
+  },
+  {
+    "fecha": "2026-07-17",
+    "hora": "23:30",
+    "calle": "Brown y España",
+    "lat": -32.9356070018404,
+    "lng": -60.6441489165706,
+    "ubicacion_aproximada": false,
+    "tipo": "Vuelco",
+    "vehiculos": "Jeep Compact, Peugeot 208, Renault Clio",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Lluvia",
+    "lluvia_mm": 10.5,
+    "link": "https://www.lacapital.com.ar/la-ciudad/un-choque-impresionante-termino-un-jeep-dado-vuelta-el-centro-rosario-n10270192.html"
+  },
+  {
+    "fecha": "2026-07-08",
+    "hora": "08:30",
+    "calle": "Avenida Rivarola y Danieri",
+    "lat": -32.9661622368892,
+    "lng": -60.7235701947389,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Motomel DLX 110, Renault 19, Automóvil estacionado",
+    "heridos": 0,
+    "fallecidos": 1,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/fallecieron-dos-motociclistas-la-zona-oeste-poco-mas-12-horas-diferencia-n10268604.html"
+  },
+  {
+    "fecha": "2026-06-16",
+    "hora": "22:30",
+    "calle": "Bulevar Oroño y Gaboto",
+    "lat": -32.9706162350332,
+    "lng": -60.6601190607462,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Motocicleta Yamaha Tenere 250cc, Colectivo Linea 129",
+    "heridos": 0,
+    "fallecidos": 1,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/fallecio-un-motociclista-luego-un-choque-un-colectivo-bulevar-orono-n10264915.html"
+  },
+  {
+    "fecha": "2026-05-13",
+    "hora": "05:00",
+    "calle": "Avenida San Martín y Amenábar",
+    "lat": -32.9724448115831,
+    "lng": -60.6431806986324,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Fiat Palio",
+    "heridos": 0,
+    "fallecidos": 1,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/choque-estremecedor-y-vecinos-atrapados-un-automovilista-murio-la-colision-n10259091.html"
+  },
+  {
+    "fecha": "2026-05-01",
+    "hora": "08:00",
+    "calle": "Avenida Pellegrini y Pascual Rosas",
+    "lat": -32.9486734795946,
+    "lng": -60.6886828137201,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Peugeot 307, Chevrolet Corsa",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/un-choque-impresionante-avenida-pellegrini-termino-un-auto-dado-vuelta-n10257107.html"
+  },
+  {
+    "fecha": "2026-05-13",
+    "hora": "16:00",
+    "calle": "Santa Fe y Bulevar Avellaneda",
+    "lat": -32.9377226947585,
+    "lng": -60.6788221032281,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Toyota Yaris, Citroën C4",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/una-diputada-provincial-protagonizo-un-siniestro-vial-la-zona-oeste-rosario-no-hubo-heridos-gravedad-n10259230.html"
+  },
+  {
+    "fecha": "2026-05-18",
+    "hora": "06:45",
+    "calle": "Avenida Circunvalación y Avenida Uriburu",
+    "lat": -32.9922027875325,
+    "lng": -60.7004903311069,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Motocicleta, Camión, Toyota Hilux",
+    "heridos": 0,
+    "fallecidos": 1,
+    "clima": "Despejado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/un-motociclista-fallecio-un-choque-un-camion-avenida-circunvalacion-n10259844.html"
+  },
+  {
+    "fecha": "2026-02-06",
+    "hora": "11:00",
+    "calle": "Bulevar Rondeau y Vila",
+    "lat": -32.8981558488429,
+    "lng": -60.6913029219248,
+    "ubicacion_aproximada": false,
+    "tipo": "Atropello",
+    "vehiculos": "Peugeot Partner",
+    "heridos": 0,
+    "fallecidos": 1,
+    "clima": "Llovizna",
+    "lluvia_mm": 0.2,
+    "link": "https://www.lacapital.com.ar/la-ciudad/muerte-zona-norte-un-hombre-fue-atropellado-cuando-cruzaba-bulevar-rondeau-n10243561.html"
+  },
+  {
+    "fecha": "2026-04-04",
+    "hora": "00:00",
+    "calle": "Avenida Pellegrini y España",
+    "lat": -32.9557958447245,
+    "lng": -60.649249764094,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Corven Energy, Peugeot 206",
+    "heridos": 1,
+    "fallecidos": 0,
+    "clima": "Lluvia",
+    "lluvia_mm": 8.5,
+    "link": "https://www.lacapital.com.ar/policiales/robo-huyo-y-termino-el-hospital-despues-un-choque-haber-cruzado-rojo-n10252575.html"
+  },
+  {
+    "fecha": "2026-02-17",
+    "hora": "23:30",
+    "calle": "Avenida Circunvalación y Doctor Vicente Medina",
+    "lat": -33.00075,
+    "lng": -60.689722,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "motocicleta Honda Wave, camión",
+    "heridos": 0,
+    "fallecidos": 1,
+    "clima": "Llovizna",
+    "lluvia_mm": 0.5,
+    "link": "https://www.lacapital.com.ar/la-ciudad/choque-circunvalacion-murio-un-motociclista-y-denuncian-que-un-conductor-se-fugo-n10245296.html"
+  },
+  {
+    "fecha": "2026-03-16",
+    "hora": "07:50",
+    "calle": "Avenida Circunvalación y Avenida Presidente Perón",
+    "lat": -32.9702985451227,
+    "lng": -60.716143031977,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Fiat Punto, Peugeot 208, Dodge RAM, Toyota Hilux, Pick up",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Parcialmente nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/un-perro-suelto-avenida-circunvalacion-provoco-un-gran-choque-cadena-n10249440.html"
+  },
+  {
+    "fecha": "2026-03-26",
+    "hora": "05:30",
+    "calle": "Avenida Pellegrini y Maipú",
+    "lat": -32.9577713520211,
+    "lng": -60.6381439049668,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Taxi Fiat Cronos, Volkswagen Gol",
+    "heridos": 2,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.lacapital.com.ar/la-ciudad/un-choque-fortisimo-avenida-pellegrini-termino-un-taxi-y-otro-auto-destrozados-n10251072.html"
+  },
+  {
+    "fecha": "2026-01-13",
+    "hora": "06:30",
+    "calle": "27 de Febrero y Circunvalación",
+    "lat": -32.9595490656426,
+    "lng": -60.7203718684525,
+    "ubicacion_aproximada": false,
+    "tipo": "Atropello",
+    "vehiculos": "Camión",
+    "heridos": 0,
+    "fallecidos": 1,
+    "clima": "Lluvia",
+    "lluvia_mm": 1.6,
+    "link": "https://www.lacapital.com.ar/la-ciudad/tragedia-el-puerto-rosario-investigan-la-muerte-un-camionero-la-entrada-n10239637.html"
+  },
+  {
+    "fecha": "2026-01-13",
+    "hora": "08:30",
+    "calle": "Ocampo y Constitución",
+    "lat": -32.9600706619814,
+    "lng": -60.6787549583313,
+    "ubicacion_aproximada": false,
+    "tipo": "Atropello",
+    "vehiculos": "Automóvil Volkswagen",
+    "heridos": 1,
+    "fallecidos": 0,
+    "clima": "Lluvia",
+    "lluvia_mm": 1.6,
+    "link": "https://www.lacapital.com.ar/la-ciudad/choques-auto-y-un-hombre-atropellado-una-chica-15-anos-cual-es-la-sancion-n10239852.html"
+  },
+  {
+    "fecha": "2026-01-14",
+    "hora": "11:55",
+    "calle": "Avenida Circunvalación y Uriburu",
+    "lat": -32.9922027875325,
+    "lng": -60.7004903311069,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Camión Ford Cargo 1722, Camión con volquete",
+    "heridos": 1,
+    "fallecidos": 0,
+    "clima": "Llovizna",
+    "lluvia_mm": 0.9,
+    "link": "https://www.lacapital.com.ar/la-ciudad/choque-camiones-circunvalacion-y-uriburu-un-chofer-quedo-atrapado-n10239918.html"
+  }
 ];
 
 /* ---------- reloj ---------- */
@@ -340,6 +770,30 @@ document.getElementById('clock').textContent =
   new Date().toLocaleString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
 
 /* ---------- helpers de emoji / categorías ---------- */
+function sinAcentos(s){
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+}
+const PREFIJO_VIA = /^(avenida|av\.?|bv\.?|boulevard|blvd\.?|avda\.?|bulevar)\s+/i;
+function limpiarPrefijoVia(s){
+  return (s || '').replace(PREFIJO_VIA, '').trim();
+}
+function claveCalle(calle){
+  // agrupa "Avenida Circunvalación", "Circunvalación" y "Circunvalacion"
+  // (con/sin prefijo, con/sin tilde) como la misma calle
+  return sinAcentos(limpiarPrefijoVia(calle)).toLowerCase().trim();
+}
+function nombresCalle(calleCompleta){
+  // separa "Calle1 y Calle2" en sus dos nombres; para direcciones con
+  // altura ("San Juan al 1900") devuelve solo el nombre de la calle
+  if(calleCompleta.includes(' al ')) return [calleCompleta.split(' al ')[0].trim()];
+  return calleCompleta.split(' y ').map(s=>s.trim()).filter(Boolean);
+}
+const PATRON_RUTA_KM = /\b(ruta|autopista|autov[ií]a|km|kil[oó]metro)\b/i;
+function esCruceConRuta(calleCompleta){
+  // cruces con rutas/autopistas tienen una dinámica distinta a las
+  // esquinas de calles de ciudad, así que no se suman al corredor urbano
+  return PATRON_RUTA_KM.test(calleCompleta);
+}
 function categoriaVehiculo(v){
   v = (v || '').toLowerCase();
   if(v.includes('moto')) return 'Moto';
@@ -354,6 +808,25 @@ const EMOJI_POR_CATEGORIA_VEHICULO = {
 };
 function vehiculoEmoji(v){
   return EMOJI_POR_CATEGORIA_VEHICULO[categoriaVehiculo(v)];
+}
+function tieneMultiplesCategorias(v){
+  // detecta si el texto de "vehiculos" menciona más de un TIPO de vehículo
+  // (ej. "Motocicleta ... y Camión ..." -> moto + camión), no solo más de
+  // uno del mismo tipo (ej. "Peugeot 307, Chevrolet Corsa" son 2 autos)
+  const texto = (v || '').toLowerCase();
+  const categoriasDetectadas = new Set();
+  if(/moto/.test(texto)) categoriasDetectadas.add('Moto');
+  if(/bici/.test(texto)) categoriasDetectadas.add('Bicicleta');
+  if(/colectivo/.test(texto)) categoriasDetectadas.add('Colectivo');
+  if(/cami/.test(texto)) categoriasDetectadas.add('Camión');
+  if(/peat/.test(texto)) categoriasDetectadas.add('Peatón');
+  // "auto" genérico: cualquier vehículo mencionado que no matcheó las
+  // categorías de arriba cuenta como "Auto" (autos, taxis, camionetas, etc.)
+  const soloPalabras = texto.replace(/[.,]/g,' ').split(/\s+y\s+|,/).map(s=>s.trim()).filter(Boolean);
+  const hayGenerico = soloPalabras.some(frag =>
+    !/moto|bici|colectivo|cami|peat/.test(frag) && frag.length>0);
+  if(hayGenerico) categoriasDetectadas.add('Auto');
+  return categoriasDetectadas.size > 1;
 }
 function climaEmoji(c){
   c = c.toLowerCase();
@@ -440,43 +913,188 @@ function render(data){
     `<div class="kpi-mini"><span class="emoji">${k.emoji}</span><div class="num">${k.num}</div><div class="lbl">${k.lbl}</div></div>`
   ).join('');
 
+  // ----- tarjeta insight: corredor/calle con más siniestros -----
+  // se agrupa por cada calle involucrada (no por la esquina completa),
+  // así "Avenida Circunvalación y Pellegrini" y "Avenida Circunvalación y
+  // Uriburu" suman al mismo corredor "Avenida Circunvalación" en vez de
+  // quedar como esquinas sueltas que nunca se repiten
+  const porCalle = {};
+  data.forEach(i => {
+    const vistasEnEsteIncidente = new Set();
+    nombresCalle(i.calle).forEach(nombre => {
+      const k = claveCalle(nombre);
+      if(!k || vistasEnEsteIncidente.has(k)) return; // no contar 2 veces el mismo incidente
+      vistasEnEsteIncidente.add(k);
+      if(!porCalle[k]) porCalle[k] = {nombre, total:0, fallecidos:0};
+      // preferir como nombre a mostrar la variante con tilde/prefijo completo
+      if(nombre.length > porCalle[k].nombre.length) porCalle[k].nombre = nombre;
+      porCalle[k].total++;
+      porCalle[k].fallecidos += i.fallecidos;
+    });
+  });
+  const topCalle = Object.values(porCalle).sort((a,b)=>b.total-a.total)[0];
+  const totalFallecidosData = data.reduce((a,i)=>a+i.fallecidos,0);
+  const insightEl = document.getElementById('insightCorredor');
+  if(topCalle && topCalle.total >= 2 && data.length){
+    const pct = ((topCalle.total/data.length)*100).toFixed(0);
+    const fallTxt = topCalle.fallecidos > 0
+      ? ` con ${topCalle.fallecidos} de los ${totalFallecidosData} fallecidos del dataset`
+      : '';
+    insightEl.innerHTML = `
+      <div class="insight-card">
+        <div class="insight-icon">⚠️</div>
+        <div class="insight-text">
+          <b>${topCalle.total} de ${data.length} siniestros (${pct}%)</b> ocurrieron en
+          <b>${topCalle.nombre}</b>${fallTxt}.
+        </div>
+      </div>`;
+    insightEl.parentElement.style.display = '';
+  } else {
+    insightEl.parentElement.style.display = 'none';
+  }
+
   // ----- mapa: sacar markers viejos y poner los nuevos -----
   markers.forEach(m=>map.removeLayer(m));
+
+  // si 2+ incidentes caen en las MISMAS coordenadas exactas (ej. la misma
+  // esquina geocodificada dos veces), el segundo queda tapado debajo del
+  // primero y parece que falta. Les aplicamos una separación mínima
+  // (jitter) en círculo para que se vean como puntos distintos y
+  // clickeables por separado, sin mover la esquina real de forma notoria.
+  const porCoordenada = {};
+  data.forEach(i => {
+    const clave = `${i.lat.toFixed(6)},${i.lng.toFixed(6)}`;
+    (porCoordenada[clave] = porCoordenada[clave] || []).push(i);
+  });
+  const JITTER_RADIO = 0.00025; // ≈ 25-28 metros, suficiente para separar visualmente sin cambiar de cuadra
+  Object.values(porCoordenada).forEach(grupo => {
+    if(grupo.length < 2) return;
+    grupo.forEach((i, idx) => {
+      const angulo = (2*Math.PI*idx) / grupo.length;
+      i._latRender = i.lat + JITTER_RADIO * Math.cos(angulo);
+      i._lngRender = i.lng + JITTER_RADIO * Math.sin(angulo);
+    });
+  });
+
   markers = data.map(i=>{
+    const aprox = !!i.ubicacion_aproximada;
+    const multi = tieneMultiplesCategorias(i.vehiculos);
     const icon = L.divIcon({
       className: 'emoji-marker',
       html: `<div style="
           width:30px; height:30px; border-radius:50%;
-          background:${sevColor(i)}22; border:2px solid ${sevColor(i)};
-          display:flex; align-items:center; justify-content:center; font-size:15px;">
+          background:${sevColor(i)}22; border:2px ${aprox?'dashed':'solid'} ${sevColor(i)};
+          display:flex; align-items:center; justify-content:center; font-size:15px;
+          position:relative;">
           ${vehiculoEmoji(i.vehiculos)}
+          ${multi ? `<span style="
+              position:absolute; top:-4px; right:-4px; width:14px; height:14px;
+              border-radius:50%; background:${sevColor(i)}; color:#12141a;
+              font-size:10px; font-weight:700; line-height:14px; text-align:center;
+              font-family:'JetBrains Mono', monospace;">+</span>` : ''}
         </div>`,
       iconSize:[30,30], iconAnchor:[15,15],
     });
-    const marker = L.marker([i.lat,i.lng], {icon}).addTo(map);
+    const lat = i._latRender ?? i.lat;
+    const lng = i._lngRender ?? i.lng;
+    const marker = L.marker([lat,lng], {icon}).addTo(map);
     marker.bindPopup(
-      `<b>${vehiculoEmoji(i.vehiculos)} ${i.tipo}</b><br>${i.calle}<br>${i.fecha} · ${i.hora}<br>🤕 ${i.heridos} · 💀 ${i.fallecidos} · ${climaEmoji(i.clima)} ${i.clima}${lluviaTexto(i)}`
+      `<b>${vehiculoEmoji(i.vehiculos)} ${i.tipo}${multi?' <span style="color:#9a9da6;font-size:11px;">(varios tipos de vehículo)</span>':''}</b><br>${i.calle}<br>${i.fecha} · ${i.hora}<br>🤕 ${i.heridos} · 💀 ${i.fallecidos} · ${climaEmoji(i.clima)} ${i.clima}${lluviaTexto(i)}${aprox?'<br><small style="color:#f2a93b">📍 Ubicación aproximada</small>':''}`
     );
     return marker;
   });
 
-  // ----- chart: por tipo -----
-  const tipos = {};
-  data.forEach(i => tipos[i.tipo] = (tipos[i.tipo]||0)+1);
-  const tipoKeys = Object.keys(tipos);
-  Plotly.newPlot('chart-tipo', [{
-    x: tipoKeys.map(k=>tipos[k]),
-    y: tipoKeys,
-    type:'bar',
-    orientation:'h',
-    marker:{color:'#4fb6a8'},
+  // ----- chart: evolución mensual + indicador de variación -----
+  const porMes = {};
+  data.forEach(i => {
+    const d = new Date(i.fecha+'T00:00:00');
+    if(isNaN(d)) return;
+    const clave = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    porMes[clave] = (porMes[clave]||0) + 1;
+  });
+  const mesesOrdenados = Object.keys(porMes).sort();
+  const NOMBRES_MES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const etiquetaMes = clave => {
+    const [y,m] = clave.split('-');
+    return `${NOMBRES_MES[parseInt(m)-1]} ${y}`;
+  };
+  Plotly.newPlot('chart-tendencia', [{
+    x: mesesOrdenados.map(etiquetaMes),
+    y: mesesOrdenados.map(m=>porMes[m]),
+    type:'scatter', mode:'lines+markers',
+    line:{color:'#4fb6a8', width:2.5, shape:'spline'},
+    marker:{color:'#4fb6a8', size:7},
+    fill:'tozeroy', fillcolor:'rgba(79,182,168,0.08)',
   }], {
     paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
     font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
+    margin:{l:36, r:16, t:6, b:32},
+    xaxis:{gridcolor:'#2e3340'},
+    yaxis:{gridcolor:'#2e3340', zeroline:false, rangemode:'tozero'},
+  }, {displayModeBar:false, responsive:true});
+
+  // variación respecto al mes anterior (los últimos dos meses con datos)
+  const variacionEl = document.getElementById('variacionMensual');
+  if(mesesOrdenados.length >= 2){
+    const actual = mesesOrdenados[mesesOrdenados.length-1];
+    const anterior = mesesOrdenados[mesesOrdenados.length-2];
+    const valActual = porMes[actual], valAnterior = porMes[anterior];
+    const delta = valAnterior ? Math.round(((valActual-valAnterior)/valAnterior)*100) : null;
+    let pillClass = 'flat', pillTxt = 'sin cambios';
+    if(delta !== null && delta > 0){ pillClass='up'; pillTxt = `+${delta}%`; }
+    else if(delta !== null && delta < 0){ pillClass='down'; pillTxt = `${delta}%`; }
+    variacionEl.innerHTML =
+      `<span class="variacion-pill ${pillClass}">${pillTxt}</span>
+       <span>siniestros en ${etiquetaMes(actual)} (${valActual}) vs. ${etiquetaMes(anterior)} (${valAnterior})</span>`;
+  } else {
+    variacionEl.innerHTML = `<span>Datos insuficientes para calcular variación mes a mes</span>`;
+  }
+
+  // ----- chart: por tipo, apilado por gravedad -----
+  const tipoKeys = [...new Set(data.map(i=>i.tipo))].sort((a,b)=>
+    data.filter(i=>i.tipo===b).length - data.filter(i=>i.tipo===a).length);
+  const sevSeries = [
+    {key:'sano', label:'Solo daños materiales', color:'#4fb6a8', test:i=>i.heridos===0 && i.fallecidos===0},
+    {key:'herido', label:'Con heridos', color:'#f2a93b', test:i=>i.heridos>0 && i.fallecidos===0},
+    {key:'fatal', label:'Con fallecidos', color:'#e0555f', test:i=>i.fallecidos>0},
+  ];
+  Plotly.newPlot('chart-tipo', sevSeries.map(s=>({
+    x: tipoKeys.map(t => data.filter(i=>i.tipo===t && s.test(i)).length),
+    y: tipoKeys,
+    type:'bar', orientation:'h', name:s.label,
+    marker:{color:s.color},
+  })), {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
     margin:{l:140, r:16, t:6, b:24},
+    barmode:'stack', showlegend:false,
     xaxis:{gridcolor:'#2e3340', zeroline:false},
     yaxis:{automargin:true},
   }, {displayModeBar:false, responsive:true});
+  document.getElementById('legend-tipo').innerHTML = sevSeries.map(s=>
+    `<span><i style="background:${s.color}"></i>${s.label}</span>`).join('');
+
+  // ----- chart: por vehículo, apilado por gravedad -----
+  // (el hallazgo clave: motociclistas son ~27% de los siniestros pero
+  // concentran una porción mucho mayor de los fallecidos)
+  const vehKeys = [...new Set(data.map(i=>categoriaVehiculo(i.vehiculos)))].sort((a,b)=>
+    data.filter(i=>categoriaVehiculo(i.vehiculos)===b).length - data.filter(i=>categoriaVehiculo(i.vehiculos)===a).length);
+  Plotly.newPlot('chart-vehiculo', sevSeries.map(s=>({
+    x: vehKeys,
+    y: vehKeys.map(v => data.filter(i=>categoriaVehiculo(i.vehiculos)===v && s.test(i)).length),
+    type:'bar', name:s.label,
+    marker:{color:s.color},
+  })), {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
+    margin:{l:36, r:16, t:6, b:28},
+    barmode:'stack', showlegend:false,
+    xaxis:{gridcolor:'#2e3340'},
+    yaxis:{gridcolor:'#2e3340', zeroline:false},
+  }, {displayModeBar:false, responsive:true});
+  document.getElementById('legend-vehiculo').innerHTML = sevSeries.map(s=>
+    `<span><i style="background:${s.color}"></i>${s.label}</span>`).join('');
+
 
   // ----- chart: por hora (0 a 23, como categorías -> nunca se confunde con fechas) -----
   const horas = Array.from({length:24}, (_,h)=>h);
@@ -499,7 +1117,27 @@ function render(data){
     bargap:0.15,
   }, {displayModeBar:false, responsive:true});
 
-  // ----- chart: por gravedad (torta) -----
+  // ----- chart: por día de la semana -----
+  const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+  const conteoDias = DIAS.map((_,idx) => data.filter(i => {
+    const d = new Date(i.fecha+'T00:00:00');
+    return !isNaN(d) && d.getDay() === idx;
+  }).length);
+  const ordenLV = [1,2,3,4,5,6,0]; // Lunes a domingo
+  Plotly.newPlot('chart-diasemana', [{
+    x: ordenLV.map(idx=>DIAS[idx].slice(0,3)),
+    y: ordenLV.map(idx=>conteoDias[idx]),
+    type:'bar',
+    marker:{color:'#6c8ee0'},
+  }], {
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
+    margin:{l:36, r:16, t:6, b:28},
+    xaxis:{gridcolor:'#2e3340'},
+    yaxis:{gridcolor:'#2e3340', zeroline:false},
+    bargap:0.15,
+  }, {displayModeBar:false, responsive:true});
+
   const gravedadData = [
     {label:'Con fallecidos', valor: data.filter(i=>i.fallecidos>0).length, color:'#e0555f'},
     {label:'Con heridos', valor: data.filter(i=>i.heridos>0 && i.fallecidos===0).length, color:'#f2a93b'},
@@ -561,6 +1199,7 @@ function render(data){
 }
 
 /* ---------- lógica de filtrado ---------- */
+let datosActuales = incidentes; // se actualiza en cada render, para descarga CSV
 function aplicarFiltros(){
   const tipo = document.getElementById('filtroTipo').value;
   const gravedad = document.getElementById('filtroGravedad').value;
@@ -575,6 +1214,7 @@ function aplicarFiltros(){
   if(vehiculo !== 'todos') data = data.filter(i => categoriaVehiculo(i.vehiculos) === vehiculo);
   if(clima !== 'todos') data = data.filter(i => i.clima === clima);
 
+  datosActuales = data;
   render(data);
 }
 
@@ -586,6 +1226,29 @@ document.getElementById('filtroReset').addEventListener('click', ()=>{
     document.getElementById(id).value = 'todos';
   });
   aplicarFiltros();
+});
+
+/* ---------- descarga CSV de los datos actualmente filtrados ---------- */
+function csvEscape(v){
+  const s = String(v ?? '');
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+document.getElementById('btnDescargar').addEventListener('click', ()=>{
+  const columnas = ['fecha','hora','calle','tipo','vehiculos','heridos','fallecidos','clima','lluvia_mm','ubicacion_aproximada','link'];
+  const filas = [columnas.join(',')].concat(
+    datosActuales.map(i => columnas.map(c => csvEscape(i[c])).join(','))
+  );
+  const csv = '﻿' + filas.join('\n'); // BOM para que Excel abra bien los acentos
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const fecha = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `siniestros_rosario_filtrado_${fecha}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 });
 
 /* ---------- pestañas ---------- */
@@ -608,7 +1271,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     if(tab === 'mapa'){
       setTimeout(()=> map.invalidateSize(), 0);
     } else if(tab === 'graficos'){
-      ['chart-tipo','chart-hora','chart-gravedad','chart-clima'].forEach(id=> Plotly.Plots.resize(id));
+      ['chart-tendencia','chart-tipo','chart-vehiculo','chart-hora','chart-diasemana','chart-gravedad','chart-clima'].forEach(id=> Plotly.Plots.resize(id));
     }
   });
 });
