@@ -251,7 +251,7 @@
     <div>
       <div class="eyebrow"><span class="dot"></span> Monitoreo activo — Rosario, Santa Fe</div>
       <h1>Observatorio Inteligente de Siniestros Viales</h1>
-      <div class="subtitle">Noticias de medios locales, procesadas con IA y estructuradas automáticamente. Datos de ejemplo para maqueta — se reemplazan por el pipeline real de scraping.</div>
+      <div class="subtitle">Noticias de medios locales, procesadas con IA y estructuradas automáticamente.</div>
     </div>
     <div class="status">
       ÚLTIMA ACTUALIZACIÓN<br>
@@ -761,6 +761,21 @@ const incidentes = [
     "clima": "Lluvia",
     "lluvia_mm": 1.6,
     "link": "https://www.lacapital.com.ar/la-ciudad/choques-auto-y-un-hombre-atropellado-una-chica-15-anos-cual-es-la-sancion-n10239852.html"
+  },
+  {
+    "fecha": "2026-08-14",
+    "hora": "21:05",
+    "calle": "Avenida Circunvalación y Avenida Pellegrini",
+    "lat": -32.948844,
+    "lng": -60.721929,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Motocicleta Motomel S2 150 cc, Camión con acoplado",
+    "heridos": 2,
+    "fallecidos": 0,
+    "clima": "Llovizna",
+    "lluvia_mm": 2.6,
+    "link": "https://www.rosario3.com/policiales/fuerte-choque-en-circunvalacion-dos-hombres-heridos-tras-caer-con-su-moto-debajo-de-un-acoplado-20260815-0003.html"
   }
 ];
 
@@ -879,7 +894,7 @@ function render(data){
 
   const kpiData = [
     {emoji:"💥", num:total, lbl:"Siniestros totales", accent:"var(--teal)"},
-    {emoji:"📅", num:semana, lbl:"Últimos 7 días", accent:"var(--caution)"},
+    {emoji:"📅", num:semana, lbl:"Siniestros en los últimos 7 días", accent:"var(--caution)"},
     {emoji:"🤕", num:heridos, lbl:"Personas heridas", accent:"var(--caution)"},
     {emoji:"💀", num:fallecidos, lbl:"Personas fallecidas", accent:"var(--danger)"},
   ];

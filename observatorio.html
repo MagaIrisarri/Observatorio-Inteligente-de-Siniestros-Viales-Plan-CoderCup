@@ -251,13 +251,12 @@
     <div>
       <div class="eyebrow"><span class="dot"></span> Monitoreo activo — Rosario, Santa Fe</div>
       <h1>Observatorio Inteligente de Siniestros Viales</h1>
-      <div class="subtitle">Noticias de medios locales, procesadas con IA y estructuradas automáticamente. Datos de ejemplo para maqueta — se reemplazan por el pipeline real de scraping.</div>
+      <div class="subtitle">Noticias de medios locales, procesadas con IA y estructuradas automáticamente.</div>
     </div>
     <div class="status">
       ÚLTIMA ACTUALIZACIÓN<br>
       <b id="clock">—</b><br>
       Fuente: 2 medios · Histórico completo<br>
-      <span style="color:var(--caution)">✨ Versión con íconos</span>
     </div>
   </header>
 
@@ -880,7 +879,7 @@ function render(data){
 
   const kpiData = [
     {emoji:"💥", num:total, lbl:"Siniestros totales", accent:"var(--teal)"},
-    {emoji:"📅", num:semana, lbl:"Últimos 7 días", accent:"var(--caution)"},
+    {emoji:"📅", num:semana, lbl:"Siniestros en los últimos 7 días", accent:"var(--caution)"},
     {emoji:"🤕", num:heridos, lbl:"Personas heridas", accent:"var(--caution)"},
     {emoji:"💀", num:fallecidos, lbl:"Personas fallecidas", accent:"var(--danger)"},
   ];
