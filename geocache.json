@@ -1,40 +1,20 @@
 {
-  "Mendoza|Servando Bayo": [
-    -32.9432293772723,
-    -60.6858763666408,
-    false
+  "ALTURA|San Juan|3900": [
+    -32.9432983794734,
+    -60.6773596103455
   ],
-  "Presidente Perón|Lavalle": [
-    -32.9574429910802,
-    -60.6823578345535,
-    false
-  ],
-  "Circunvalación|Pellegrini": [
-    -32.948844,
-    -60.721929,
+  "Paraguay|Gálvez": [
+    -32.9677422992466,
+    -60.6493505127743,
     false
   ],
   "ALTURA|San Juan|1900": [
     -32.9481675237892,
     -60.6501698247922
   ],
-  "Zeballos|Alem": [
-    -32.9569332121707,
-    -60.6305176373993,
-    false
-  ],
-  "ALTURA|San Juan|3940": [
-    -32.943201481912666,
-    -60.67792191015529
-  ],
-  "Ruta 34|Circunvalacion": [
-    -32.893655,
-    -60.719316,
-    false
-  ],
-  "Paraguay|Gálvez": [
-    -32.9677422992466,
-    -60.6493505127743,
+  "Mendoza|Servando Bayo": [
+    -32.9432293772723,
+    -60.6858763666408,
     false
   ],
   "Barra|27 de Febrero": [
@@ -42,19 +22,37 @@
     -60.7060613187855,
     false
   ],
+  "Ayacucho|Riobamba": [
+    -32.9650228916155,
+    -60.6310564188499,
+    false
+  ],
+  "ALTURA|San Juan|3940": [
+    -32.943201481912666,
+    -60.67792191015529
+  ],
   "Rivarola|Fader": [
     -32.9661233476831,
     -60.7225002671669,
     false
   ],
-  "Eva Perón|Colombia": [
-    -32.9323929885314,
-    -60.7165324079194,
+  "Circunvalacion|Pellegrini": [
+    -32.948844,
+    -60.721929,
     false
   ],
-  "Brown|España": [
-    -32.9356070018404,
-    -60.6441489165706,
+  "Ruta 34|Circunvalacion": [
+    -32.893655,
+    -60.719316,
+    false
+  ],
+  "ALTURA|Presidente Perón|4000": [
+    -32.9573461984762,
+    -60.6823330266956
+  ],
+  "Ovidio Lagos|Rioja": [
+    -32.9433911386811,
+    -60.6617318886667,
     false
   ],
   "Rivarola|Danieri": [
@@ -62,19 +60,33 @@
     -60.7235701947389,
     false
   ],
+  "España|Brown": [
+    -32.9356070018404,
+    -60.6441489165706,
+    false
+  ],
+  "Eva Perón|Colombia": [
+    -32.9323929885314,
+    -60.7165324079194,
+    false
+  ],
   "Oroño|Gaboto": [
     -32.9706162350332,
     -60.6601190607462,
     false
   ],
+  "Circunvalación|Pellegrini": [
+    -32.948844,
+    -60.721929,
+    false
+  ],
+  "ALTURA|San Martín|2900": [
+    -32.9713056063911,
+    -60.6429103699301
+  ],
   "San Martín|Amenábar": [
     -32.9724448115831,
     -60.6431806986324,
-    false
-  ],
-  "Pellegrini|Pascual Rosas": [
-    -32.9486734795946,
-    -60.6886828137201,
     false
   ],
   "Santa Fe|Avellaneda": [
@@ -82,24 +94,23 @@
     -60.6788221032281,
     false
   ],
-  "Circunvalación|Uriburu": [
-    -32.9922027875325,
-    -60.7004903311069,
-    false
+  "ALTURA|Dante Alighieri|": [
+    -32.96013601675897,
+    -60.66542565215944
   ],
-  "Rondeau|Vila": [
-    -32.8981558488429,
-    -60.6913029219248,
-    false
-  ],
-  "Pellegrini|España": [
-    -32.9557958447245,
-    -60.649249764094,
+  "Pellegrini|Pascual Rosas": [
+    -32.9486734795946,
+    -60.6886828137201,
     false
   ],
   "Circunvalación|Doctor Vicente Medina": [
     -33.00075,
     -60.689722,
+    false
+  ],
+  "Pellegrini|España": [
+    -32.9557958447245,
+    -60.649249764094,
     false
   ],
   "Circunvalación|Presidente Perón": [
@@ -112,39 +123,24 @@
     -60.6381439049668,
     false
   ],
+  "Ocampo|Constitucion": [
+    -32.9600706619814,
+    -60.6787549583313,
+    false
+  ],
+  "Circunvalación|Uriburu": [
+    -32.9922027875325,
+    -60.7004903311069,
+    false
+  ],
   "27 de Febrero|Circunvalación": [
     -32.9595490656426,
     -60.7203718684525,
     false
   ],
-  "Ocampo|Constitución": [
-    -32.9600706619814,
-    -60.6787549583313,
-    false
-  ],
-  "Presidente Peron|Lavalle": [
-    -32.9574429910802,
-    -60.6823578345535,
-    false
-  ],
-  "Ayacucho|Riobamba": [
-    -32.9650228916155,
-    -60.6310564188499,
-    false
-  ],
-  "Ruta 34|Circunvalación": [
-    -32.893655,
-    -60.719316,
-    false
-  ],
-  "San Martin|Amenabar": [
-    -32.9724448115831,
-    -60.6431806986324,
-    false
-  ],
-  "Ocampo|Constitucion": [
-    -32.9600706619814,
-    -60.6787549583313,
+  "Rondeau|Vila": [
+    -32.898194,
+    -60.691417,
     false
   ]
 }

@@ -31,7 +31,22 @@ class SiniestroVialSchema(BaseModel):
     es_siniestro_vial: bool = Field(description="true si es un choque/accidente de tránsito, false si no")
     fecha_siniestro: str = Field(description="Fecha en formato YYYY-MM-DD o 'Desconocido'")
     hora_aprox: str = Field(description="Hora aproximada en formato HH:MM o 'Desconocido'")
-
+    tipo_siniestro: Literal["vuelco", "atropello", "colision_multiple", "choque"] = Field(
+            description=(
+                "Clasificá el hecho en UNA sola categoría, siguiendo este orden de prioridad "
+                "(si el hecho combina varias cosas a la vez, gana la que aparece primero en la lista):\n"
+                "1) 'vuelco': el vehículo volcó, quedó de costado, boca abajo o dio vueltas, "
+                "aunque después haya impactado contra otros autos, postes u objetos.\n"
+                "2) 'atropello': hubo un peatón y/o ciclista atropellado, aunque el mismo hecho "
+                "también haya incluido choque entre vehículos (y no hubo vuelco).\n"
+                "3) 'colision_multiple': chocaron 3 o más vehículos (incluye autos estacionados "
+                "que fueron embestidos), y no hubo vuelco ni atropello.\n"
+                "4) 'choque': colisión simple entre 1 o 2 vehículos, sin vuelco, atropello ni "
+                "3 o más vehículos involucrados. Es la categoría por defecto.\n"
+                "Ejemplo: un auto dado vuelta que choca contra 3 autos estacionados es 'vuelco' "
+                "(no 'colision_multiple'), porque el vuelco tiene prioridad 1."
+            )
+        )
     tipo_ubicacion: Literal["interseccion", "altura", "ruta_km", "desconocida"] = Field(
     description=(
         "Elegí 'interseccion' siempre que el texto mencione DOS calles/avenidas "
@@ -62,6 +77,12 @@ class SiniestroVialSchema(BaseModel):
     cantidad_fallecidos: int = Field(description="Cantidad de fallecidos (0 si no hay)")
     gravedad: str = Field(description="Leve, Moderado, Grave o Fatal")
     resumen_breve: str = Field(description="Resumen del hecho en máximo 20 palabras")
+
+# Orden de columnas del CSV, derivado directamente del schema en vez de fijado
+# a mano: así, si mañana se agrega/saca un campo del schema (como pasó con
+# tipo_siniestro), el header y las filas nuevas se generan siempre a partir
+# de la misma lista y no se pueden volver a desalinear entre sí.
+COLUMNAS_CSV = list(SiniestroVialSchema.model_fields.keys()) + ["url"]
 
 
 def _segundos_de_retry_delay(error):
@@ -228,7 +249,11 @@ def guardar_resultado(datos_json, url, path=ARCHIVO_SINIESTROS):
     datos_para_tabla["vehiculos_involucrados"] = ", ".join(datos_para_tabla["vehiculos_involucrados"])
     datos_para_tabla["url"] = url
 
-    df = pd.DataFrame([datos_para_tabla])
+    # reindex fuerza que la fila se escriba siempre en el orden de COLUMNAS_CSV,
+    # sin importar en qué orden vengan las claves en datos_json. Esto es lo que
+    # evita que una fila nueva quede corrida de columna si el dict tiene un
+    # campo de más, de menos, o en otro orden que el header ya escrito.
+    df = pd.DataFrame([datos_para_tabla]).reindex(columns=COLUMNAS_CSV)
     existe = os.path.exists(path)
     df.to_csv(path, mode="a", header=not existe, index=False, encoding="utf-8-sig")
     return True

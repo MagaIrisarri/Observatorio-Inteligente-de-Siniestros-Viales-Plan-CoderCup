@@ -76,7 +76,7 @@ def cargar_cache():
     try:
         with open(CACHE_GEOCODING, encoding="utf-8") as f:
             return json.load(f)
-    except FileNotFoundError:
+    except (FileNotFoundError, json.JSONDecodeError):
         return {}
 
 
@@ -139,6 +139,9 @@ CORRECCIONES_INTERSECCIONES = {
     frozenset({"circunvalacion", "ruta 34"}): (-32.893655, -60.719316),
     # Doctor Vicente Medina y Circunvalación -- mismo problema.
     frozenset({"circunvalacion", "doctor vicente medina"}): (-33.00075, -60.689722),
+    # Bulevar Rondeau y Vila -- Georef no la tiene cargada. Coordenada real
+    # (32°53'53.5"S 60°41'29.1"W convertida a decimal).
+    frozenset({"rondeau", "vila"}): (-32.898194, -60.691417),
 }
 
 
@@ -336,6 +339,17 @@ def convertir(path_csv):
             print(f"  -> se omite (sin calle registrada): {url}")
             continue
 
+        # si vehiculos_involucrados tenía una coma sin comillas (típico de haber
+        # abierto y vuelto a guardar el CSV en Excel), esa coma de más corre
+        # todas las columnas siguientes y heridos/fallecidos dejan de ser
+        # números -- se salta la fila en vez de crashear toda la corrida.
+        try:
+            heridos = int(float(fila.get("cantidad_heridos") or 0))
+            fallecidos = int(float(fila.get("cantidad_fallecidos") or 0))
+        except ValueError:
+            print(f"  -> se omite (fila con columnas corridas/corruptas, revisala a mano en el CSV): {url}")
+            continue
+
         # --- ruta/autopista con km, o ubicación que Gemini no pudo precisar ---
         if tipo_ubicacion in ("ruta_km", "desconocida"):
             ruta_nombre = (fila.get("ruta_nombre") or calle1).strip()
@@ -345,8 +359,8 @@ def convertir(path_csv):
                 "hora": fila.get("hora_aprox") or "00:00",
                 "descripcion": ruta_nombre + (f", km {fila.get('kilometro')}" if fila.get("kilometro") else ""),
                 "vehiculos": vehiculos,
-                "heridos": int(float(fila.get("cantidad_heridos") or 0)),
-                "fallecidos": int(float(fila.get("cantidad_fallecidos") or 0)),
+                "heridos": heridos,
+                "fallecidos": fallecidos,
                 "link": url,
             })
             continue
@@ -375,8 +389,8 @@ def convertir(path_csv):
                 "ubicacion_aproximada": False,
                 "tipo": inferir_tipo(resumen, vehiculos),
                 "vehiculos": vehiculos,
-                "heridos": int(float(fila.get("cantidad_heridos") or 0)),
-                "fallecidos": int(float(fila.get("cantidad_fallecidos") or 0)),
+                "heridos": heridos,
+                "fallecidos": fallecidos,
                 "clima": clima_de_fila(fila, resumen),
                 "lluvia_mm": float(fila.get("lluvia_mm") or 0.0),
                 "link": url or "#",
@@ -419,8 +433,8 @@ def convertir(path_csv):
             "ubicacion_aproximada": aproximado,
             "tipo": inferir_tipo(resumen, vehiculos),
             "vehiculos": vehiculos,
-            "heridos": int(float(fila.get("cantidad_heridos") or 0)),
-            "fallecidos": int(float(fila.get("cantidad_fallecidos") or 0)),
+            "heridos": heridos,
+            "fallecidos": fallecidos,
             "clima": clima_de_fila(fila, resumen),
             "lluvia_mm": float(fila.get("lluvia_mm") or 0.0),
             "link": url or "#",
