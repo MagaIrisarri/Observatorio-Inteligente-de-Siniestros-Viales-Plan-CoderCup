@@ -11,7 +11,7 @@ from google.genai import types
 from dotenv import load_dotenv
 from typing import Literal, Optional
 
-MODEL_NAME = "gemini-3.1-flash-lite"
+MODEL_NAME = "gemini-3.5-flash-lite"
 ARCHIVO_SINIESTROS = "siniestros_rosario.csv"
 MAX_REINTENTOS_IA = 3
 ESPERA_BASE_SEGUNDOS = 5

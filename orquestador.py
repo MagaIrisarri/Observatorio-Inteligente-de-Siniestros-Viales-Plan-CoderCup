@@ -24,12 +24,14 @@ HTML_TEMPLATE = "observatorio.html"
 # porque es, por lejos, la fuente con mejor precisión.
 URLS_SECCION = (
     "https://www.rosario3.com/tags/Siniestro-vial",
+    "https://www.rosario3.com/seccion/policiales/",
     "https://www.lacapital.com.ar/siniestro-vial-a1006964.html",
     "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/1",
     "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/2",
     "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/3",
-    "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/4",
-    "https://www.lacapital.com.ar/siniestro-vial-a1006964.html/5"
+    "https://www.lacapital.com.ar/secciones/policiales.html",
+    "https://www.lacapital.com.ar/secciones/policiales.html/1",
+    "https://www.lacapital.com.ar/secciones/policiales.html/2",
 )
 
 
