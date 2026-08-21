@@ -29,8 +29,13 @@ CACHE_GEOCODING = "geocache.json"
 
 # ---------- reparación de filas corruptas (formato viejo, por si acaso) ----------
 def leer_csv_robusto(path):
-    with open(path, encoding="utf-8-sig", newline="") as f:
-        contenido = f.read()
+    for encoding in ("utf-8-sig", "cp1252"):
+        try:
+            with open(path, encoding=encoding, newline="") as f:
+                contenido = f.read()
+            break
+        except UnicodeDecodeError:
+            continue
 
     reader = csv.reader(io.StringIO(contenido))
     fieldnames = next(reader)
