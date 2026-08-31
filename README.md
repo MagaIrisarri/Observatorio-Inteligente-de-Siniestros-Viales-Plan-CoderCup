@@ -61,17 +61,17 @@ El pipeline de datos integra las siguientes etapas automatizadas:
  [ Visualización Interactiva & Mapa Georreferenciado ]
 
 ```
-Ingesta y Web Scraping: Rastreo de noticias en secciones de policiales y tránsito de medios locales de Rosario.
+**Web Scraping:** Rastreo de noticias en secciones de policiales y tránsito de medios locales de Rosario.
 
-Procesamiento de Lenguaje Natural (LLM): Utilización de la API de Gemini para parsear el cuerpo de las noticias a un esquema estructurado.
+**Procesamiento de Lenguaje Natural (LLM):** Utilización de la API de Gemini para parsear el cuerpo de las noticias a un esquema estructurado.
 
-Enriquecimiento de Datos (Weather API): Cruce espacio-temporal automático con servicios meteorológicos para incorporar las condiciones climáticas del momento del siniestro.
+**Enriquecimiento de Datos (Weather API):** Cruce espacio-temporal automático con servicios meteorológicos para incorporar las condiciones climáticas del momento del siniestro.
 
-Almacenamiento y Control de Duplicados: Filtrado y validación de eventos para evitar sobreconteo por coberturas múltiples.
+**Almacenamiento y Control de Duplicados:** Filtrado y validación de eventos para evitar sobreconteo por coberturas múltiples.
 
-Visualización y Analytics: Dashboard web interactivo con mapas térmicos/georreferenciados y gráficos de tendencias.
+**Visualización y Analytics:** Dashboard web interactivo con mapas térmicos/georreferenciados y gráficos de tendencias.
 
-🌐 Aplicación interactiva
+## 🌐 Aplicación interactiva
 Explorá los datos en tiempo real:
 
 🔗 Observatorio Inteligente de Siniestros Viales
@@ -84,7 +84,7 @@ Filtros Dinámicos: Segmentación por nivel de gravedad (solo daños, heridos, f
 
 Análisis de Tendencias: Indicadores estadísticos y gráficos interactivos para la evaluación del tránsito y la accidentología.
 
-🚀 Tecnologías Utilizadas
+## 🚀 Tecnologías Utilizadas
 Lenguaje: Python
 
 Extracción de Datos: Web Scraping (BeautifulSoup / Requests)
@@ -99,14 +99,14 @@ Visualización & Web: Framework de Dashboard interactivo / Plotly / Folium
 
 Despliegue: Vercel
 
-📂 Repositorio y Código Fuente
+## 📂 Repositorio y Código Fuente
 💻 Repositorio GitHub
 
-📄 Nota metodológica
+### 📄 Nota metodológica
 
 Este proyecto fue desarrollado como una prueba de concepto (MVP) en el marco del concurso CoderCup de Coderhouse. Utiliza datos de fuentes periodísticas públicas y no sustituye a los registros oficiales de siniestralidad vial.
 
-📬 Autoras y Contacto
+## 📬 Autoras y Contacto
 Malena Irisarri — Licenciada en Estadística (Universidad Nacional de Rosario - UNR)
 
 📧 maleirisarri@hotmail.com | 🔗 LinkedIn
