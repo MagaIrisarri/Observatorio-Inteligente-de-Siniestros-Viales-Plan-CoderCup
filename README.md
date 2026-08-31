@@ -110,4 +110,4 @@ Malena Irisarri — Licenciada en Estadística (Universidad Nacional de Rosario 
 
 Magalí Irisarri — Estudiante de Ingeniería en Sistemas (Universidad Tecnológica Nacional - UTN)
 
-📧 magairisarri@gmail.com | 🔗 [LinkedIn]([https://www.linkedin.com/in/malena-irisarri-a54766260/](https://www.linkedin.com/in/magali-irisarri/))
+📧 magairisarri@gmail.com | 🔗 [LinkedIn](https://www.linkedin.com/in/magali-irisarri/)
