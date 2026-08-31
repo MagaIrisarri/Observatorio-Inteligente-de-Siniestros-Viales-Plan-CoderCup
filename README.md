@@ -59,6 +59,8 @@ El pipeline de datos integra las siguientes etapas automatizadas:
                      │
                      ▼ (Dashboard / Vercel)
  [ Visualización Interactiva & Mapa Georreferenciado ]
+
+```
 Ingesta y Web Scraping: Rastreo de noticias en secciones de policiales y tránsito de medios locales de Rosario.
 
 Procesamiento de Lenguaje Natural (LLM): Utilización de la API de Gemini para parsear el cuerpo de las noticias a un esquema estructurado.
