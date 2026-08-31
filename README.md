@@ -106,6 +106,8 @@ Este proyecto fue desarrollado como una prueba de concepto (MVP) en el marco del
 ## 📬 Autoras y Contacto
 Malena Irisarri — Licenciada en Estadística (Universidad Nacional de Rosario - UNR)
 
-📧 maleirisarri@hotmail.com | 🔗 LinkedIn
+📧 maleirisarri@hotmail.com | 🔗 [LinkedIn](https://www.linkedin.com/in/malena-irisarri-a54766260/)
 
-Magalí Irisarri — Estudiante de Ingeniería en Sistemas de Información (Universidad Tecnológica Nacional - UTN)
+Magalí Irisarri — Estudiante de Ingeniería en Sistemas (Universidad Tecnológica Nacional - UTN)
+
+📧 magairisarri@gmail.com | 🔗 [LinkedIn]([https://www.linkedin.com/in/malena-irisarri-a54766260/](https://www.linkedin.com/in/magali-irisarri/))
