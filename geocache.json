@@ -176,5 +176,45 @@
   "ALTURA|pasaje Gandhi|6100": [
     -32.925248,
     -60.706421
+  ],
+  "Presidente Perón|Lima": [
+    -32.9581209383985,
+    -60.6882106328114,
+    false
+  ],
+  "27 de Febrero|Avellaneda": [
+    -32.9602475832963,
+    -60.6844748042839,
+    false
+  ],
+  "Circunvalación|Ayacucho": [
+    -32.96042960167384,
+    -60.67982147037945,
+    true
+  ],
+  "27 de Febrero|Provincia de Misiones": [
+    -32.9597394196301,
+    -60.7287478600604,
+    false
+  ],
+  "Solís|Tucumán": [
+    -32.9323145103841,
+    -60.7037654719757,
+    false
+  ],
+  "Jorge Newbery|Wilde": [
+    -32.9086315520298,
+    -60.7398304171575,
+    false
+  ],
+  "Campbell|Tupac Amaru": [
+    -32.9296929635011,
+    -60.7085479753728,
+    false
+  ],
+  "Campbell|Túpac Amaru": [
+    -32.9296929635011,
+    -60.7085479753728,
+    false
   ]
 }

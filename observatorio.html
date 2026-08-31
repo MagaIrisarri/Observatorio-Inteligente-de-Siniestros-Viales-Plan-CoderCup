@@ -256,7 +256,7 @@
     <div class="status">
       ÚLTIMA ACTUALIZACIÓN<br>
       <b id="clock">—</b><br>
-      Fuente: 2 medios · Histórico completo<br>
+      Fuentes: Rosario3 / La Capital · Año 2026<br>
     </div>
   </header>
 
@@ -335,12 +335,18 @@
         <h2>Por gravedad</h2>
         <div id="chart-gravedad" style="height:260px;"></div>
       </div>
-      <div class="panel">
-        <h2>Por clima</h2>
-        <div id="chart-clima" style="height:260px;"></div>
+              <div class="panel">
+        <h2>Por franja del día</h2>
+        <div id="chart-franja-dia" style="height:260px;"></div>
+        <div style="margin-top:8px; font-family:'JetBrains Mono', monospace; font-size:11px; color:#9a9da6;">
+          Mañana: 6 a 12&nbsp;h · Tarde: 12 a 19&nbsp;h · Noche: 19 a 6&nbsp;h
+        </div>
       </div>
+
+        <div class="panel" style="margin-top:16px; grid-column: 1 / -1;">
+      <h2>Por clima <span class="tag">de más a menos lluvia</span></h2>
+      <div id="chart-clima-barras" style="height:260px;"></div>
     </div>
-  </section>
 
   <section class="tab-panel" id="tab-datos">
     <div class="panel">
@@ -358,9 +364,9 @@
     </div>
   </section>
 
-  <footer>
+    <footer>
     <span>OBSERVATORIO · Rosario, AR — MVP CoderCup</span>
-    <span>Fuentes: Rosario3 / La Capital</span>
+    <span style="margin-left:auto; text-align:right;">Fuentes: Rosario3 / La Capital</span>
   </footer>
 </div>
 
@@ -1156,23 +1162,64 @@ function render(data){
     legend:{orientation:'h', y:-0.1},
   }, {displayModeBar:false, responsive:true});
 
-  // ----- chart: por clima (torta) -----
+    // ----- datos de clima (se siguen usando en el gráfico de barras de más abajo) -----
   const climas = {};
   data.forEach(i => climas[i.clima] = (climas[i.clima]||0)+1);
-  const climaKeys = Object.keys(climas);
-  Plotly.newPlot('chart-clima', [{
-    labels: climaKeys,
-    values: climaKeys.map(k=>climas[k]),
-    type:'pie',
-    hole:0.45,
-    marker:{colors:['#4fb6a8','#f2a93b','#e0555f','#6c8ee0','#9a9da6','#c9872a']},
-    textfont:{color:'#12141a', size:11},
+
+  // ----- chart: por franja del día (torta) -----
+  const franjaDeHora = (horaStr) => {
+    const h = parseInt((horaStr||'').split(':')[0]);
+    if (isNaN(h)) return null;
+    if (h >= 6 && h < 12) return 'Mañana';
+    if (h >= 12 && h < 19) return 'Tarde';
+    return 'Noche'; // 19:00 a 05:59
+  };
+  const FRANJAS = ['Mañana','Tarde','Noche'];
+  const conteoFranjas = {};
+  data.forEach(i => {
+    const f = franjaDeHora(i.hora);
+    if (f) conteoFranjas[f] = (conteoFranjas[f]||0) + 1;
+  });
+  const franjasConDatos = FRANJAS.filter(f => conteoFranjas[f] > 0);
+  Plotly.newPlot('chart-franja-dia', [{
+    labels: franjasConDatos,
+    values: franjasConDatos.map(f => conteoFranjas[f]),
+    type: 'pie',
+    hole: 0.45,
+    marker: {colors: ['#f2a93b','#4fb6a8','#6c8ee0']},
+    textfont: {color:'#12141a', size:11},
   }], {
     paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
     font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
     margin:{l:10, r:10, t:6, b:10}, showlegend:true,
     legend:{orientation:'h', y:-0.1},
   }, {displayModeBar:false, responsive:true});
+
+  // ----- chart: por clima (barras, de más a menos lluvia) -----
+  const ordenClima = [
+    'Tormenta con granizo intenso','Tormenta con granizo','Tormenta',
+    'Lluvia intensa','Chubascos intensos','Chubascos','Lluvia helada','Lluvia',
+    'Llovizna helada','Llovizna','Niebla','Nublado','Parcialmente nublado',
+    'Mayormente despejado','Despejado'
+  ];
+  const climaBarrasKeys = Object.keys(climas).sort((a,b) => {
+    const ia = ordenClima.indexOf(a), ib = ordenClima.indexOf(b);
+    if(ia === -1 && ib === -1) return a.localeCompare(b);
+    if(ia === -1) return 1;
+    if(ib === -1) return -1;
+    return ia - ib;
+  });
+  Plotly.newPlot('chart-clima-barras', [{
+    x: climaBarrasKeys,
+    y: climaBarrasKeys.map(k => climas[k]),
+    type: 'bar',
+    marker: {color: '#4fb6a8'},
+  }], {
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: {color: '#9a9da6', family: 'JetBrains Mono, monospace', size: 11},
+    margin: {l: 40, r: 10, t: 6, b: 80},
+    xaxis: {tickangle: -40},
+  }, {displayModeBar: false, responsive: true});
 
   // ----- tabla feed -----
   const feed = document.getElementById('feed');
@@ -1270,7 +1317,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     if(tab === 'mapa'){
       setTimeout(()=> map.invalidateSize(), 0);
     } else if(tab === 'graficos'){
-      ['chart-tendencia','chart-tipo','chart-vehiculo','chart-hora','chart-diasemana','chart-gravedad','chart-clima'].forEach(id=> Plotly.Plots.resize(id));
+      ['chart-tendencia','chart-tipo','chart-vehiculo','chart-hora','chart-diasemana','chart-gravedad','chart-franja-dia','chart-clima-barras'].forEach(id=> Plotly.Plots.resize(id));
     }
   });
 });

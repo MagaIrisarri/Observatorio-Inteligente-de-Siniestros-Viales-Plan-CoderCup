@@ -256,7 +256,7 @@
     <div class="status">
       ÚLTIMA ACTUALIZACIÓN<br>
       <b id="clock">—</b><br>
-      Fuente: 2 medios · Histórico completo<br>
+      Fuentes: Rosario3 / La Capital · Año 2026<br>
     </div>
   </header>
 
@@ -335,12 +335,18 @@
         <h2>Por gravedad</h2>
         <div id="chart-gravedad" style="height:260px;"></div>
       </div>
-      <div class="panel">
-        <h2>Por clima</h2>
-        <div id="chart-clima" style="height:260px;"></div>
+              <div class="panel">
+        <h2>Por franja del día</h2>
+        <div id="chart-franja-dia" style="height:260px;"></div>
+        <div style="margin-top:8px; font-family:'JetBrains Mono', monospace; font-size:11px; color:#9a9da6;">
+          Mañana: 6 a 12&nbsp;h · Tarde: 12 a 19&nbsp;h · Noche: 19 a 6&nbsp;h
+        </div>
       </div>
+
+        <div class="panel" style="margin-top:16px; grid-column: 1 / -1;">
+      <h2>Por clima <span class="tag">de más a menos lluvia</span></h2>
+      <div id="chart-clima-barras" style="height:260px;"></div>
     </div>
-  </section>
 
   <section class="tab-panel" id="tab-datos">
     <div class="panel">
@@ -358,9 +364,9 @@
     </div>
   </section>
 
-  <footer>
-    <span>OBSERVATORIO · Rosario, AR </span>
-    <span>Fuentes: Rosario3 / La Capital</span>
+    <footer>
+    <span>OBSERVATORIO · Rosario, AR — MVP CoderCup</span>
+    <span style="margin-left:auto; text-align:right;">Fuentes: Rosario3 / La Capital</span>
   </footer>
 </div>
 
@@ -629,21 +635,6 @@ const incidentes = [
   },
   {
     "fecha": "2026-05-13",
-    "hora": "05:00",
-    "calle": "Avenida San Martín al 2900",
-    "lat": -32.9713056063911,
-    "lng": -60.6429103699301,
-    "ubicacion_aproximada": false,
-    "tipo": "Choque",
-    "vehiculos": "Fiat Palio",
-    "heridos": 0,
-    "fallecidos": 1,
-    "clima": "Nublado",
-    "lluvia_mm": 0.0,
-    "link": "https://www.lacapital.com.ar/la-ciudad/choque-estremecedor-y-vecinos-atrapados-un-automovilista-murio-la-colision-n10259091.html"
-  },
-  {
-    "fecha": "2026-05-13",
     "hora": "05:20",
     "calle": "Avenida San Martín y Amenábar",
     "lat": -32.9724448115831,
@@ -866,6 +857,66 @@ const incidentes = [
     "clima": "Llovizna",
     "lluvia_mm": 0.2,
     "link": "https://www.lacapital.com.ar/policiales/increible-robo-fallido-chocaron-un-auto-didi-y-un-ladron-termino-el-piso-n10274824.html"
+  },
+  {
+    "fecha": "2026-08-22",
+    "hora": "Desconocido",
+    "calle": "Presidente Perón y Lima",
+    "lat": -32.9581209383985,
+    "lng": -60.6882106328114,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "moto, auto",
+    "heridos": 1,
+    "fallecidos": 0,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.rosario3.com/informaciongeneral/una-persona-murio-en-un-importante-siniestro-vial-amplio-operativo-policial-en-la-zona-oeste-20260822-0020.html"
+  },
+  {
+    "fecha": "2026-08-21",
+    "hora": "Desconocido",
+    "calle": "Avenida Circunvalación y Ayacucho",
+    "lat": -32.96042960167384,
+    "lng": -60.67982147037945,
+    "ubicacion_aproximada": true,
+    "tipo": "Vuelco",
+    "vehiculos": "camión jaula Scania, camioneta",
+    "heridos": 1,
+    "fallecidos": 0,
+    "clima": "Parcialmente nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.rosario3.com/policiales/un-camion-con-ganado-volco-en-circunvalacion-transito-cortado-vacas-sueltas-y-cinco-detenidos-por-faenado-20260821-0005.html"
+  },
+  {
+    "fecha": "2026-08-26",
+    "hora": "21:20",
+    "calle": "avenida Jorge Newbery y Wilde",
+    "lat": -32.9086315520298,
+    "lng": -60.7398304171575,
+    "ubicacion_aproximada": false,
+    "tipo": "Choque",
+    "vehiculos": "Ford Ranger, patrullero, patrullero, moto Siam Quirion 150 cc",
+    "heridos": 0,
+    "fallecidos": 0,
+    "clima": "Llovizna",
+    "lluvia_mm": 1.1,
+    "link": "https://www.lacapital.com.ar/policiales/robo-pelicula-un-minimarket-funes-persecucion-choques-y-vuelco-rosario-n10277359.html"
+  },
+  {
+    "fecha": "2026-08-19",
+    "hora": "Desconocido",
+    "calle": "Campbell y Túpac Amaru",
+    "lat": -32.9296929635011,
+    "lng": -60.7085479753728,
+    "ubicacion_aproximada": false,
+    "tipo": "Atropello",
+    "vehiculos": "Tren",
+    "heridos": 0,
+    "fallecidos": 1,
+    "clima": "Nublado",
+    "lluvia_mm": 0.0,
+    "link": "https://www.rosario3.com/policiales/la-autopsia-al-cuerpo-hallado-al-lado-de-las-vias-en-barrio-luduena-concluyo-que-sufrio-un-accidente-la-familia-exige-mas-medidas-20260828-0050.html"
   }
 ];
 
@@ -1261,23 +1312,64 @@ function render(data){
     legend:{orientation:'h', y:-0.1},
   }, {displayModeBar:false, responsive:true});
 
-  // ----- chart: por clima (torta) -----
+    // ----- datos de clima (se siguen usando en el gráfico de barras de más abajo) -----
   const climas = {};
   data.forEach(i => climas[i.clima] = (climas[i.clima]||0)+1);
-  const climaKeys = Object.keys(climas);
-  Plotly.newPlot('chart-clima', [{
-    labels: climaKeys,
-    values: climaKeys.map(k=>climas[k]),
-    type:'pie',
-    hole:0.45,
-    marker:{colors:['#4fb6a8','#f2a93b','#e0555f','#6c8ee0','#9a9da6','#c9872a']},
-    textfont:{color:'#12141a', size:11},
+
+  // ----- chart: por franja del día (torta) -----
+  const franjaDeHora = (horaStr) => {
+    const h = parseInt((horaStr||'').split(':')[0]);
+    if (isNaN(h)) return null;
+    if (h >= 6 && h < 12) return 'Mañana';
+    if (h >= 12 && h < 19) return 'Tarde';
+    return 'Noche'; // 19:00 a 05:59
+  };
+  const FRANJAS = ['Mañana','Tarde','Noche'];
+  const conteoFranjas = {};
+  data.forEach(i => {
+    const f = franjaDeHora(i.hora);
+    if (f) conteoFranjas[f] = (conteoFranjas[f]||0) + 1;
+  });
+  const franjasConDatos = FRANJAS.filter(f => conteoFranjas[f] > 0);
+  Plotly.newPlot('chart-franja-dia', [{
+    labels: franjasConDatos,
+    values: franjasConDatos.map(f => conteoFranjas[f]),
+    type: 'pie',
+    hole: 0.45,
+    marker: {colors: ['#f2a93b','#4fb6a8','#6c8ee0']},
+    textfont: {color:'#12141a', size:11},
   }], {
     paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
     font:{color:'#9a9da6', family:'JetBrains Mono, monospace', size:11},
     margin:{l:10, r:10, t:6, b:10}, showlegend:true,
     legend:{orientation:'h', y:-0.1},
   }, {displayModeBar:false, responsive:true});
+
+  // ----- chart: por clima (barras, de más a menos lluvia) -----
+  const ordenClima = [
+    'Tormenta con granizo intenso','Tormenta con granizo','Tormenta',
+    'Lluvia intensa','Chubascos intensos','Chubascos','Lluvia helada','Lluvia',
+    'Llovizna helada','Llovizna','Niebla','Nublado','Parcialmente nublado',
+    'Mayormente despejado','Despejado'
+  ];
+  const climaBarrasKeys = Object.keys(climas).sort((a,b) => {
+    const ia = ordenClima.indexOf(a), ib = ordenClima.indexOf(b);
+    if(ia === -1 && ib === -1) return a.localeCompare(b);
+    if(ia === -1) return 1;
+    if(ib === -1) return -1;
+    return ia - ib;
+  });
+  Plotly.newPlot('chart-clima-barras', [{
+    x: climaBarrasKeys,
+    y: climaBarrasKeys.map(k => climas[k]),
+    type: 'bar',
+    marker: {color: '#4fb6a8'},
+  }], {
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    font: {color: '#9a9da6', family: 'JetBrains Mono, monospace', size: 11},
+    margin: {l: 40, r: 10, t: 6, b: 80},
+    xaxis: {tickangle: -40},
+  }, {displayModeBar: false, responsive: true});
 
   // ----- tabla feed -----
   const feed = document.getElementById('feed');
@@ -1375,7 +1467,7 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
     if(tab === 'mapa'){
       setTimeout(()=> map.invalidateSize(), 0);
     } else if(tab === 'graficos'){
-      ['chart-tendencia','chart-tipo','chart-vehiculo','chart-hora','chart-diasemana','chart-gravedad','chart-clima'].forEach(id=> Plotly.Plots.resize(id));
+      ['chart-tendencia','chart-tipo','chart-vehiculo','chart-hora','chart-diasemana','chart-gravedad','chart-franja-dia','chart-clima-barras'].forEach(id=> Plotly.Plots.resize(id));
     }
   });
 });
