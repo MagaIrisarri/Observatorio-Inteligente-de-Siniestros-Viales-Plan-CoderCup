@@ -42,6 +42,8 @@ A través de un pipeline automatizado, el sistema rastrea noticias locales, extr
                      ▼ (Dashboard / Vercel)
  [ Visualización Interactiva & Mapa Georreferenciado ]
 
+```text
+
 📊 Características del Dashboard
 Mapa Interactivo: Visualización espacial y georreferenciada de los siniestros detectados en la ciudad de Rosario.
 
