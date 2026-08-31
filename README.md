@@ -99,9 +99,6 @@ Visualización & Web: Framework de Dashboard interactivo / Plotly / Folium
 
 Despliegue: Vercel
 
-## 📂 Repositorio y Código Fuente
-💻 Repositorio GitHub
-
 ### 📄 Nota metodológica
 
 Este proyecto fue desarrollado como una prueba de concepto (MVP) en el marco del concurso CoderCup de Coderhouse. Utiliza datos de fuentes periodísticas públicas y no sustituye a los registros oficiales de siniestralidad vial.
